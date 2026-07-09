@@ -64,7 +64,7 @@ public class ProductionOrderController {
         if (o.getSalesOrder() != null) {
             o.setOrderNo(o.getSalesOrder().getOrderNo());
         } else {
-            o.setOrderNo("PRD-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmm")));
+            o.setOrderNo("PRD-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
         }
         if (o.getStatus() == null) o.setStatus("待排产");
         return Result.ok(toMap(repo.save(o)), "创建成功");

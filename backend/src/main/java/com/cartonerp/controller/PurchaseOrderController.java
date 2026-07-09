@@ -41,8 +41,8 @@ public class PurchaseOrderController {
     public Result<Map<String, Object>> create(@RequestBody PurchaseOrder o) {
         if (o.getSupplier() != null && o.getSupplier().getId() != null)
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(o::setSupplier);
-        // Auto-generate order number: PO-YYYYMMDDHHmm
-        o.setOrderNo("PO-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmm")));
+        // Auto-generate order number: PO-YYYYMMDDHHmmss
+        o.setOrderNo("PO-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
         PurchaseOrder saved = repo.save(o);
         businessService.onPurchaseReceived(saved);
 

@@ -50,8 +50,8 @@ public class SalesOrderController {
     public Result<Map<String, Object>> create(@RequestBody SalesOrder o) {
         if (o.getCustomer() != null && o.getCustomer().getId() != null)
             customerRepo.findById(o.getCustomer().getId()).ifPresent(o::setCustomer);
-        // Auto-generate order number: SO-YYYYMMDDHHmm
-        o.setOrderNo("SO-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmm")));
+        // Auto-generate order number: SO-YYYYMMDDHHmmss
+        o.setOrderNo("SO-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
         SalesOrder saved = repo.save(o);
 
         // Auto-create purchase order
