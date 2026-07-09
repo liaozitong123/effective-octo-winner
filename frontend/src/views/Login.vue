@@ -13,7 +13,6 @@
         </el-form-item>
         <el-button type="primary" size="large" :loading="loading" class="login-btn" @click="handleLogin">登 录</el-button>
       </el-form>
-      <p class="login-hint">默认账号: admin / admin123</p>
     </div>
   </div>
 </template>
@@ -26,7 +25,7 @@ import { login } from '../api/auth'
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
-const form = reactive({ username: 'admin', password: 'admin123' })
+const form = reactive({ username: '', password: '' })
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
@@ -36,6 +35,7 @@ async function handleLogin() {
   loading.value = true
   try {
     await login(form.username, form.password)
+    sessionStorage.setItem('erpLoggedIn', '1')
     router.push(route.query.redirect || '/dashboard')
   } catch (e) {}
   loading.value = false
@@ -49,5 +49,4 @@ async function handleLogin() {
 .login-header h1 { font-size:1.6rem; color:#1e293b; margin-bottom:6px; }
 .login-header p { font-size:0.85rem; color:#64748b; }
 .login-btn { width:100%; }
-.login-hint { text-align:center; font-size:0.8rem; color:#94a3b8; margin-top:20px; }
 </style>

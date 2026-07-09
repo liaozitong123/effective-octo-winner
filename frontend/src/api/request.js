@@ -14,6 +14,7 @@ request.interceptors.response.use(
       return Promise.reject(err)
     }
     if (err.response?.status === 401) {
+      sessionStorage.removeItem('erpLoggedIn')
       ElMessage.error('请先登录')
       window.location.href = '/login'
     } else {

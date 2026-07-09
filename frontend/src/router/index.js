@@ -6,7 +6,7 @@ const routes = [
   { path: '/production/report', name: 'ScanReport', component: () => import('../views/production/ScanReport.vue') },
   {
     path: '/', component: () => import('../views/Layout.vue'),
-    redirect: '/dashboard',
+    redirect: '/login',
     children: [
       { path: 'dashboard', name: 'Dashboard', component: () => import('../views/Dashboard.vue') },
       { path: 'sales/customers', name: 'Customers', component: () => import('../views/sales/CustomerList.vue') },
@@ -38,6 +38,10 @@ const publicPaths = ['/login', '/production/report']
 
 router.beforeEach(async (to) => {
   if (publicPaths.includes(to.path)) return true
+
+  if (sessionStorage.getItem('erpLoggedIn') !== '1') {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
 
   try {
     await request.get('/current-user', { skipAuthRedirect: true })

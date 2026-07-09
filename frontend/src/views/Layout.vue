@@ -88,6 +88,7 @@ async function handleLogout() {
   try {
     await logout()
   } catch {}
+  sessionStorage.removeItem('erpLoggedIn')
   router.push('/login')
 }
 </script>
