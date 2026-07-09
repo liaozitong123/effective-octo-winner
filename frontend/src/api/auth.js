@@ -8,6 +8,10 @@ export function getCurrentUser() {
   return request.get('/current-user')
 }
 
+export function logout() {
+  return request.post('/logout', null, { skipAuthRedirect: true })
+}
+
 export function getDashboard() {
   return request.get('/dashboard')
 }

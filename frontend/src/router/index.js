@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import request from '../api/request'
 
 const routes = [
   { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
@@ -31,6 +32,19 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+const publicPaths = ['/login', '/production/report']
+
+router.beforeEach(async (to) => {
+  if (publicPaths.includes(to.path)) return true
+
+  try {
+    await request.get('/current-user', { skipAuthRedirect: true })
+    return true
+  } catch {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
 })
 
 export default router

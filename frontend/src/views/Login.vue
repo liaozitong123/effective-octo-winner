@@ -20,10 +20,11 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { login } from '../api/auth'
 
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const form = reactive({ username: 'admin', password: 'admin123' })
 const rules = {
@@ -35,7 +36,7 @@ async function handleLogin() {
   loading.value = true
   try {
     await login(form.username, form.password)
-    router.push('/dashboard')
+    router.push(route.query.redirect || '/dashboard')
   } catch (e) {}
   loading.value = false
 }

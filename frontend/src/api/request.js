@@ -10,6 +10,9 @@ const request = axios.create({
 request.interceptors.response.use(
   res => res,
   err => {
+    if (err.config?.skipAuthRedirect) {
+      return Promise.reject(err)
+    }
     if (err.response?.status === 401) {
       ElMessage.error('请先登录')
       window.location.href = '/login'

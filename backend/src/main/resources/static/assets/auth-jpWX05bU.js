@@ -1,0 +1,1 @@
+import{k as t}from"./index-BfB9SR9y.js";function u(o,r){return t.post("/login",{username:o,password:r})}function e(){return t.post("/logout",null,{skipAuthRedirect:!0})}function s(){return t.get("/dashboard")}export{e as a,s as g,u as l};

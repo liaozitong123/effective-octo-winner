@@ -67,6 +67,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { logout } from '../api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -83,7 +84,12 @@ const pageTitle = computed(() => {
   return m[route.path] || ''
 })
 
-function handleLogout() { router.push('/login') }
+async function handleLogout() {
+  try {
+    await logout()
+  } catch {}
+  router.push('/login')
+}
 </script>
 
 <style scoped>
