@@ -4,6 +4,7 @@ import com.cartonerp.common.Result;
 import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.ProductionRecord;
 import com.cartonerp.repository.*;
+import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -60,12 +61,7 @@ public class ProductionOrderController {
     public Result<Map<String, Object>> create(@RequestBody ProductionOrder o) {
         if (o.getSalesOrder() != null && o.getSalesOrder().getId() != null)
             salesOrderRepo.findById(o.getSalesOrder().getId()).ifPresent(o::setSalesOrder);
-        // Use same order number as the linked sales order
-        if (o.getSalesOrder() != null) {
-            o.setOrderNo(o.getSalesOrder().getOrderNo());
-        } else {
-            o.setOrderNo("PRD-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
-        }
+        o.setOrderNo(OrderNumberUtil.next("PRD"));
         if (o.getStatus() == null) o.setStatus("待排产");
         return Result.ok(toMap(repo.save(o)), "创建成功");
     }

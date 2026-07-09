@@ -4,6 +4,7 @@ import com.cartonerp.common.Result;
 import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.repository.*;
+import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -42,13 +43,14 @@ public class PurchaseOrderController {
         if (o.getSupplier() != null && o.getSupplier().getId() != null)
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(o::setSupplier);
         // Auto-generate order number: PO-YYYYMMDDHHmmss
-        o.setOrderNo("PO-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+        o.setOrderNo(OrderNumberUtil.next("PO"));
         PurchaseOrder saved = repo.save(o);
         businessService.onPurchaseReceived(saved);
 
         // Auto-create production order
         ProductionOrder po = new ProductionOrder();
-        po.setOrderNo(saved.getOrderNo());
+        po.setOrderNo(OrderNumberUtil.next("PRD"));
+        po.setProductName(saved.getProductName() != null ? saved.getProductName() : saved.getMaterialName());
         po.setSupplier(saved.getSupplier());
         po.setQty(saved.getQty());
         po.setUnit(saved.getUnit() != null ? saved.getUnit() : "个");

@@ -9,6 +9,7 @@ import com.cartonerp.repository.DeliveryNoteRepository;
 import com.cartonerp.repository.ProductionOrderRepository;
 import com.cartonerp.repository.PurchaseOrderRepository;
 import com.cartonerp.repository.SalesOrderRepository;
+import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -51,12 +52,12 @@ public class SalesOrderController {
         if (o.getCustomer() != null && o.getCustomer().getId() != null)
             customerRepo.findById(o.getCustomer().getId()).ifPresent(o::setCustomer);
         // Auto-generate order number: SO-YYYYMMDDHHmmss
-        o.setOrderNo("SO-" + java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
+        o.setOrderNo(OrderNumberUtil.next("SO"));
         SalesOrder saved = repo.save(o);
 
         // Auto-create purchase order
         PurchaseOrder puo = new PurchaseOrder();
-        puo.setOrderNo(saved.getOrderNo());
+        puo.setOrderNo(OrderNumberUtil.next("PO"));
         puo.setProductName(saved.getProductName());
         puo.setSpec(saved.getSpec());
         puo.setMaterial(saved.getMaterial());
@@ -72,7 +73,7 @@ public class SalesOrderController {
 
         // Auto-create production order from purchase order
         ProductionOrder po = new ProductionOrder();
-        po.setOrderNo(savedPuo.getOrderNo());
+        po.setOrderNo(OrderNumberUtil.next("PRD"));
         po.setProductName(savedPuo.getProductName());
         po.setCustomer(saved.getCustomer());
         po.setSupplier(savedPuo.getSupplier());
