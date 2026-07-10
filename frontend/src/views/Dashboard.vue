@@ -1,31 +1,26 @@
 <template>
-  <div>
-    <el-row :gutter="16" class="stat-row">
-      <el-col :span="6"><StatCard icon="Document" color="#2563eb" :value="data.todayOrders" label="今日订单" /></el-col>
-      <el-col :span="6"><StatCard icon="Box" color="#22c55e" :value="data.monthOutput" label="本月产量" /></el-col>
-      <el-col :span="6"><StatCard icon="Warning" color="#f59e0b" :value="data.stockAlert" label="库存预警" /></el-col>
-      <el-col :span="6"><StatCard icon="User" color="#7c3aed" :value="data.totalCustomers" label="客户总数" /></el-col>
-    </el-row>
-    <el-row :gutter="16" class="stat-row">
-      <el-col :span="8">
-        <el-card shadow="hover">
-          <div class="card-title">应付账款</div>
-          <div class="card-value red">¥{{ formatNum(data.receivable) }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover">
-          <div class="card-title">应收账款</div>
-          <div class="card-value green">¥{{ formatNum(data.payable) }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover">
-          <div class="card-title">供应商总数</div>
-          <div class="card-value blue">{{ data.totalSuppliers }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
+  <div class="dashboard-page">
+    <section class="stat-grid">
+      <StatCard icon="Document" color="#2563eb" :value="data.todayOrders" label="今日订单" />
+      <StatCard icon="Box" color="#16a34a" :value="data.monthOutput" label="本月产量" />
+      <StatCard icon="Warning" color="#d97706" :value="data.stockAlert" label="库存预警" />
+      <StatCard icon="User" color="#7c3aed" :value="data.totalCustomers" label="客户总数" />
+    </section>
+
+    <section class="finance-grid">
+      <el-card shadow="never" class="finance-card">
+        <div class="card-title">应付账款</div>
+        <div class="card-value red">¥{{ formatNum(data.receivable) }}</div>
+      </el-card>
+      <el-card shadow="never" class="finance-card">
+        <div class="card-title">应收账款</div>
+        <div class="card-value green">¥{{ formatNum(data.payable) }}</div>
+      </el-card>
+      <el-card shadow="never" class="finance-card">
+        <div class="card-title">供应商总数</div>
+        <div class="card-value blue">{{ data.totalSuppliers }}</div>
+      </el-card>
+    </section>
   </div>
 </template>
 
@@ -44,8 +39,59 @@ function formatNum(n) { return (n || 0).toLocaleString() }
 </script>
 
 <style scoped>
-.stat-row { margin-bottom:16px; }
-.card-title { font-size:0.85rem; color:#64748b; margin-bottom:8px; }
-.card-value { font-size:1.8rem; font-weight:800; }
-.card-value.red { color:#ef4444; } .card-value.green { color:#22c55e; } .card-value.blue { color:#2563eb; }
+.dashboard-page {
+  display: grid;
+  gap: 14px;
+}
+
+.stat-grid,
+.finance-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.stat-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.finance-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.finance-card :deep(.el-card__body) {
+  min-height: 108px;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  padding: 18px;
+}
+
+.card-title {
+  font-size: 0.86rem;
+  color: var(--erp-muted);
+  font-weight: 700;
+}
+
+.card-value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.card-value.red { color: var(--erp-danger); }
+.card-value.green { color: var(--erp-success); }
+.card-value.blue { color: var(--erp-primary); }
+
+@media (max-width: 1080px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .stat-grid,
+  .finance-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

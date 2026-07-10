@@ -3,7 +3,18 @@
 </template>
 
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif; }
-#app { width: 100%; min-height: 100vh; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
 </style>

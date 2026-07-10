@@ -2,14 +2,15 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-header">
-        <h1>📦 华天纸箱管理系统</h1>
+        <div class="login-mark">箱</div>
+        <h1>华天纸箱管理系统</h1>
       </div>
-      <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleLogin">
+      <el-form ref="formRef" :model="form" :rules="rules" autocomplete="off" @submit.prevent="handleLogin">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" size="large" prefix-icon="User" />
+          <el-input v-model="form.username" placeholder="用户名" size="large" prefix-icon="User" autocomplete="off" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" type="password" placeholder="密码" size="large" prefix-icon="Lock" show-password @keyup.enter="handleLogin" />
+          <el-input v-model="form.password" type="password" placeholder="密码" size="large" prefix-icon="Lock" autocomplete="new-password" show-password @keyup.enter="handleLogin" />
         </el-form-item>
         <el-button type="primary" size="large" :loading="loading" class="login-btn" @click="handleLogin">登 录</el-button>
       </el-form>
@@ -43,10 +44,66 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#0f172a,#1e293b,#0f172a); }
-.login-card { background:#fff; border-radius:16px; padding:48px 40px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
-.login-header { text-align:center; margin-bottom:36px; }
-.login-header h1 { font-size:1.6rem; color:#1e293b; margin-bottom:6px; }
-.login-header p { font-size:0.85rem; color:#64748b; }
-.login-btn { width:100%; }
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    linear-gradient(135deg, rgba(37,99,235,.18), transparent 30%),
+    linear-gradient(180deg, #101928, #0c1320);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 8px;
+  padding: 42px 40px 38px;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 22px 60px rgba(0,0,0,.28);
+}
+
+.login-header {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.login-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.login-header h1 {
+  font-size: 1.55rem;
+  color: var(--erp-text);
+  letter-spacing: 0;
+}
+
+.login-btn {
+  width: 100%;
+  margin-top: 4px;
+  box-shadow: 0 10px 20px rgba(37,99,235,.22);
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 14px;
+  }
+
+  .login-card {
+    padding: 32px 22px;
+  }
+}
 </style>

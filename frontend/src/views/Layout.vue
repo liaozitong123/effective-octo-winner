@@ -1,13 +1,16 @@
 <template>
-  <div class="layout">
-    <el-container>
-      <el-aside width="220px" class="sidebar">
+  <div class="layout" :class="{ 'is-collapsed': isSidebarCollapsed }">
+    <el-container class="layout-container">
+      <el-aside :width="asideWidth" class="sidebar">
         <div class="sidebar-logo">
-          <span>📦 华天纸箱</span>
+          <span class="brand-mark">箱</span>
+          <span class="brand-text">华天纸箱</span>
         </div>
         <el-menu
           :default-active="activeMenu"
           router
+          :collapse="isSidebarCollapsed"
+          :collapse-transition="false"
           background-color="#0f172a"
           text-color="#94a3b8"
           active-text-color="#fff"
@@ -50,10 +53,14 @@
       </el-aside>
       <el-container>
         <el-header class="topbar">
-          <span class="topbar-title">{{ pageTitle }}</span>
+          <div class="topbar-left">
+            <el-button class="collapse-btn" :icon="Menu" text @click="toggleSidebar" />
+            <span class="topbar-title">{{ pageTitle }}</span>
+          </div>
           <div class="topbar-right">
-            <span>管理员</span>
-            <el-button type="danger" size="small" @click="handleLogout">退出</el-button>
+            <span class="system-badge">ERP 工作台</span>
+            <span class="user-pill">管理员</span>
+            <el-button type="danger" plain size="small" @click="handleLogout">退出</el-button>
           </div>
         </el-header>
         <el-main class="main-content">
@@ -65,14 +72,17 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { Menu } from '@element-plus/icons-vue'
 import { logout } from '../api/auth'
 
 const router = useRouter()
 const route = useRoute()
+const isSidebarCollapsed = ref(false)
 
 const activeMenu = computed(() => route.path)
+const asideWidth = computed(() => isSidebarCollapsed.value ? '72px' : '232px')
 const pageTitle = computed(() => {
   const m = {
     '/dashboard': '仪表盘', '/sales/customers': '客户资料', '/sales/orders': '销售订单',
@@ -84,6 +94,21 @@ const pageTitle = computed(() => {
   return m[route.path] || ''
 })
 
+function toggleSidebar() {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+function syncSidebarByViewport() {
+  if (window.innerWidth <= 900) isSidebarCollapsed.value = true
+}
+
+onMounted(() => {
+  syncSidebarByViewport()
+  window.addEventListener('resize', syncSidebarByViewport)
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', syncSidebarByViewport))
+
 async function handleLogout() {
   try {
     await logout()
@@ -94,12 +119,143 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-.layout { height: 100vh; }
-.sidebar { background: #0f172a; overflow-y: auto; }
-.sidebar-logo { display:flex; align-items:center; justify-content:center; padding:20px; color:#fff; font-size:1.15rem; font-weight:700; border-bottom:1px solid rgba(255,255,255,0.06); }
-.sidebar-menu { border-right: none; }
-.topbar { display:flex; align-items:center; justify-content:space-between; background:#fff; border-bottom:1px solid #e2e8f0; height:56px; }
-.topbar-title { font-size:1.1rem; font-weight:700; color:#1e293b; }
-.topbar-right { display:flex; align-items:center; gap:12px; font-size:0.9rem; color:#64748b; }
-.main-content { background:#f1f5f9; min-height:calc(100vh - 56px); padding:20px; }
+.layout,
+.layout-container {
+  height: 100vh;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, var(--erp-sidebar), var(--erp-sidebar-deep));
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: width .18s ease;
+  box-shadow: 8px 0 24px rgba(15, 23, 42, .08);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 64px;
+  padding: 0 20px;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  white-space: nowrap;
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 15px;
+  flex: none;
+}
+
+.brand-text {
+  overflow: hidden;
+}
+
+.sidebar-menu {
+  border-right: none;
+  padding: 12px 8px;
+}
+
+.sidebar-menu :deep(.el-menu-item),
+.sidebar-menu :deep(.el-sub-menu__title) {
+  height: 42px;
+  line-height: 42px;
+  border-radius: 7px;
+  margin: 3px 0;
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active) {
+  background: var(--erp-primary);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .25);
+}
+
+.is-collapsed .brand-text {
+  display: none;
+}
+
+.is-collapsed .sidebar-logo {
+  justify-content: center;
+  padding: 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,.9);
+  border-bottom: 1px solid var(--erp-border);
+  height: 58px;
+  padding: 0 22px;
+  backdrop-filter: blur(8px);
+}
+
+.topbar-left,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.collapse-btn {
+  color: #526178;
+}
+
+.topbar-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--erp-text);
+  white-space: nowrap;
+}
+
+.topbar-right {
+  font-size: 0.9rem;
+  color: var(--erp-muted);
+}
+
+.system-badge,
+.user-pill {
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--erp-border);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 10px;
+}
+
+.main-content {
+  background: var(--erp-bg);
+  min-height: calc(100vh - 58px);
+  padding: 18px 20px 22px;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .system-badge {
+    display: none;
+  }
+
+  .topbar-right {
+    gap: 8px;
+  }
+
+  .main-content {
+    padding: 12px;
+  }
+}
 </style>

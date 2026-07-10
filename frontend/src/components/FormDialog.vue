@@ -1,8 +1,22 @@
 <template>
-  <el-dialog v-model="visible" :title="isEdit ? '编辑' : '新增'" width="600px" :close-on-click-modal="false" @close="handleClose">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-      <el-form-item v-for="field in fields" :key="field.key" :label="field.label" :prop="field.key">
-<span v-if="field.type === 'display'" class="display-value">{{ form[field.key] || '-' }}</span>
+  <el-dialog
+    v-model="visible"
+    :title="isEdit ? '编辑' : '新增'"
+    width="min(880px, calc(100vw - 28px))"
+    top="5vh"
+    class="erp-form-dialog"
+    :close-on-click-modal="false"
+    @close="handleClose"
+  >
+    <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="erp-form-grid">
+      <el-form-item
+        v-for="field in fields"
+        :key="field.key"
+        :label="field.label"
+        :prop="field.key"
+        :class="fieldClass(field)"
+      >
+        <span v-if="field.type === 'display'" class="display-value">{{ form[field.key] || '-' }}</span>
         <el-input v-else-if="!field.type || field.type === 'text' || field.type === 'number'" v-model="form[field.key]" :type="field.type || 'text'" :readonly="field.readonly" :disabled="field.disabled" />
         <el-select v-else-if="field.type === 'select'" v-model="form[field.key]" placeholder="请选择" filterable clearable>
           <el-option v-for="opt in getFieldOptions(field)" :key="opt.value" :label="opt.label" :value="opt.value" />
@@ -12,8 +26,10 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
-      <el-button type="primary" @click="handleSubmit" :loading="submitting">保存</el-button>
+      <div class="dialog-actions">
+        <el-button @click="visible = false">取消</el-button>
+        <el-button type="primary" @click="handleSubmit" :loading="submitting">保存</el-button>
+      </div>
     </template>
   </el-dialog>
 </template>
@@ -37,6 +53,15 @@ const formRef = ref(null)
 const form = reactive({})
 const rules = reactive({})
 const asyncOptions = reactive({})  // key → [{value, label}]
+const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea']
+
+function fieldClass(field) {
+  return {
+    'wide-field': field.type === 'textarea' || field.full,
+    'display-field': field.type === 'display',
+    'calculated-field': field.type === 'display' && displayKeys.includes(field.key),
+  }
+}
 
 watch(() => props.modelValue, (v) => {
   visible.value = v
@@ -102,5 +127,105 @@ function handleClose() { formRef.value?.resetFields() }
 </script>
 
 <style scoped>
-.display-value { font-size:1rem; font-weight:700; color:#2563eb; line-height:40px; }
+:global(.erp-form-dialog) {
+  border-radius: var(--erp-radius);
+}
+
+:global(.erp-form-dialog .el-dialog__header) {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--erp-border);
+  margin-right: 0;
+}
+
+:global(.erp-form-dialog .el-dialog__title) {
+  font-weight: 800;
+  color: var(--erp-text);
+}
+
+:global(.erp-form-dialog .el-dialog__body) {
+  max-height: min(66vh, 620px);
+  overflow: auto;
+  padding: 16px 22px 8px;
+}
+
+:global(.erp-form-dialog .el-dialog__footer) {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 22px 16px;
+  border-top: 1px solid var(--erp-border);
+  background: linear-gradient(180deg, rgba(255,255,255,.88), #fff);
+}
+
+.erp-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.erp-form-grid :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.erp-form-grid :deep(.el-form-item__label) {
+  color: #506079;
+  font-weight: 700;
+  line-height: 20px;
+  margin-bottom: 6px;
+}
+
+.erp-form-grid :deep(.el-select),
+.erp-form-grid :deep(.el-input),
+.erp-form-grid :deep(.el-date-editor) {
+  width: 100%;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
+}
+
+.display-value {
+  width: 100%;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: #f7fbff;
+  border: 1px solid var(--erp-border);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--erp-primary);
+}
+
+.calculated-field .display-value {
+  min-height: 48px;
+  background: var(--erp-primary-soft);
+  border-color: #cfe0ff;
+  font-size: 1.12rem;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 720px) {
+  :global(.erp-form-dialog .el-dialog__body) {
+    max-height: 70vh;
+    padding: 14px;
+  }
+
+  :global(.erp-form-dialog .el-dialog__footer) {
+    padding: 12px 14px;
+  }
+
+  .erp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-actions :deep(.el-button) {
+    flex: 1;
+  }
+}
 </style>
