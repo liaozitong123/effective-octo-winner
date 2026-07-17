@@ -58,12 +58,14 @@ public class SalesOrderController {
         // Auto-create purchase order
         PurchaseOrder puo = new PurchaseOrder();
         puo.setOrderNo(OrderNumberUtil.next("PO"));
+        puo.setSalesOrder(saved);
         puo.setProductName(saved.getProductName());
         puo.setSpec(saved.getSpec());
         puo.setMaterial(saved.getMaterial());
         puo.setBoxType(saved.getBoxType());
         puo.setFluteType(saved.getFluteType());
         puo.setQty(saved.getQty());
+        puo.setUnit(saved.getUnit());
         puo.setUnitPrice(saved.getUnitPrice());
         puo.setMaterialType("纸板");
         puo.setMaterialName(saved.getProductName());
@@ -74,6 +76,7 @@ public class SalesOrderController {
         // Auto-create production order from purchase order
         ProductionOrder po = new ProductionOrder();
         po.setOrderNo(OrderNumberUtil.next("PRD"));
+        po.setSalesOrder(saved);
         po.setProductName(savedPuo.getProductName());
         po.setSpec(savedPuo.getSpec());
         po.setMaterial(savedPuo.getMaterial());
@@ -118,6 +121,8 @@ public class SalesOrderController {
         if (o.getNotes() != null) ex.setNotes(o.getNotes());
         SalesOrder updated = repo.save(ex);
 
+        syncLinkedPurchaseOrders(updated);
+
         // Sync linked production orders
         productionOrderRepo.findAll().stream()
             .filter(po -> po.getSalesOrder() != null && po.getSalesOrder().getId().equals(id))
@@ -133,6 +138,59 @@ public class SalesOrderController {
             });
 
         return Result.ok(toMap(updated), "更新成功");
+    }
+
+    private void syncLinkedPurchaseOrders(SalesOrder updated) {
+        List<PurchaseOrder> linkedOrders = purchaseOrderRepo.findBySalesOrderId(updated.getId());
+        if (linkedOrders.isEmpty()) linkedOrders = findLegacyPurchaseOrders(updated);
+
+        for (PurchaseOrder purchaseOrder : linkedOrders) {
+            purchaseOrder.setSalesOrder(updated);
+            purchaseOrder.setQty(updated.getQty());
+            if (updated.getUnit() != null) purchaseOrder.setUnit(updated.getUnit());
+            purchaseOrderRepo.save(purchaseOrder);
+        }
+    }
+
+    private List<PurchaseOrder> findLegacyPurchaseOrders(SalesOrder salesOrder) {
+        return purchaseOrderRepo.findAll().stream()
+            .filter(p -> p.getSalesOrder() == null)
+            .filter(p -> sameValue(p.getMaterialType(), "纸板"))
+            .filter(p -> sameCustomer(p, salesOrder))
+            .filter(p -> sameValue(p.getProductName(), salesOrder.getProductName())
+                || sameValue(p.getMaterialName(), salesOrder.getProductName()))
+            .filter(p -> sameValue(p.getSpec(), salesOrder.getSpec()))
+            .filter(p -> sameValue(p.getMaterial(), salesOrder.getMaterial()))
+            .filter(p -> sameValue(p.getBoxType(), salesOrder.getBoxType()))
+            .filter(p -> sameValue(p.getFluteType(), salesOrder.getFluteType()))
+            .filter(p -> sameOrderNumberStamp(p.getOrderNo(), salesOrder.getOrderNo()))
+            .toList();
+    }
+
+    private boolean sameCustomer(PurchaseOrder purchaseOrder, SalesOrder salesOrder) {
+        Long purchaseCustomerId = purchaseOrder.getCustomer() != null ? purchaseOrder.getCustomer().getId() : null;
+        Long salesCustomerId = salesOrder.getCustomer() != null ? salesOrder.getCustomer().getId() : null;
+        return Objects.equals(purchaseCustomerId, salesCustomerId);
+    }
+
+    private boolean sameValue(String a, String b) {
+        return Objects.equals(normalize(a), normalize(b));
+    }
+
+    private String normalize(String value) {
+        return value == null || value.isBlank() ? "" : value.trim();
+    }
+
+    private boolean sameOrderNumberStamp(String purchaseOrderNo, String salesOrderNo) {
+        String purchaseStamp = orderNumberStamp(purchaseOrderNo);
+        String salesStamp = orderNumberStamp(salesOrderNo);
+        return !purchaseStamp.isEmpty() && purchaseStamp.equals(salesStamp);
+    }
+
+    private String orderNumberStamp(String orderNo) {
+        if (orderNo == null) return "";
+        int dashIndex = orderNo.indexOf("-");
+        return dashIndex >= 0 && dashIndex + 1 < orderNo.length() ? orderNo.substring(dashIndex + 1) : "";
     }
 
     @DeleteMapping("/{id}")

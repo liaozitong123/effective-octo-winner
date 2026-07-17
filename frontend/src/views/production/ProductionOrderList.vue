@@ -46,8 +46,8 @@ const fields = [
   { key: 'cutCount', label: '开数', type: 'number' },
   { key: 'boardLength', label: '纸板长度', type: 'number', hintKey: 'realBoardLength', hintLabel: '真实长度' },
   { key: 'boardWidth', label: '纸板宽度', type: 'number', hintKey: 'realBoardWidth', hintLabel: '真实宽度' },
-  { key: 'boardQty', label: '纸板数量', type: 'number' },
-  { key: 'crease', label: '凹压线' },
+  { key: 'boardQty', label: '纸板数量', type: 'number', hintKey: 'referenceBoardQty', hintLabel: '参考数量' },
+  { key: 'crease', label: '凹压线', hintKey: 'referenceCrease', hintLabel: '参考凹压线' },
   { key: 'urgent', label: '急单', type: 'select', options: ['否','是'] },
   { key: 'orderArea', label: '下单面积', type: 'number' },
   { key: 'signDate', label: '签收日期', type: 'date' },
@@ -56,7 +56,7 @@ const fields = [
 function calcForm(data) { return applyBoardCalculation(data, { syncOrderArea: true }) }
 function onFormChange(data) { return calcForm(data) }
 function toApiData(form) {
-  const { realBoardLength, realBoardWidth, ...data } = calcForm(form)
+  const { realBoardLength, realBoardWidth, referenceCrease, referenceBoardQty, ...data } = calcForm(form)
   return data
 }
 function fetchData(p) { return productionOrdersAPI.list(p) }

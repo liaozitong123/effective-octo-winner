@@ -17,6 +17,9 @@ public class PurchaseOrder {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
     private Customer customer;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "sales_order_id")
+    private SalesOrder salesOrder;
     @Column(nullable = false, length = 60)
     private String materialType;
     @Column(nullable = false, length = 120)
@@ -58,6 +61,7 @@ public class PurchaseOrder {
     public String getOrderNo() { return orderNo; }
     public Supplier getSupplier() { return supplier; }
     public Customer getCustomer() { return customer; }
+    public SalesOrder getSalesOrder() { return salesOrder; }
     public String getMaterialType() { return materialType; }
     public String getMaterialName() { return materialName; }
     public String getSpec() { return spec; }
@@ -74,6 +78,7 @@ public class PurchaseOrder {
     public void setOrderNo(String o) { this.orderNo = o; }
     public void setSupplier(Supplier s) { this.supplier = s; }
     public void setCustomer(Customer c) { this.customer = c; }
+    public void setSalesOrder(SalesOrder s) { this.salesOrder = s; }
     public void setMaterialType(String m) { this.materialType = m; }
     public void setMaterialName(String m) { this.materialName = m; }
     public void setSpec(String s) { this.spec = s; }

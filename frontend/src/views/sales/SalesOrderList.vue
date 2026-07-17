@@ -26,7 +26,7 @@ const columns = [
   { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '订单号' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
   { key: 'spec', label: '规格(cm)' }, { key: 'material', label: '客户材质' },
-  { key: 'boxType', label: '盒式' }, { key: 'fluteType', label: '楞别' }, { key: 'singleArea', label: '单个面积' }, { key: 'qty', label: '数量' },
+  { key: 'boxType', label: '盒式' }, { key: 'fluteType', label: '楞别' }, { key: 'singleArea', label: '单个面积' }, { key: 'qty', label: '下单数量' },
   { key: 'unitPrice', label: '客户平方单价' }, { key: 'boxUnitPrice', label: '纸箱单价' },
   { key: 'totalAmount', label: '总金额' },
 ]
@@ -41,7 +41,7 @@ const fields = [
   { key: 'fluteType', label: '楞别' },
   { key: 'singleArea', label: '单个面积(㎡)', type: 'display' },
   { key: 'unitPrice', label: '客户平方单价', type: 'number' },
-  { key: 'qty', label: '数量', type: 'number', required: true },
+  { key: 'qty', label: '下单数量', type: 'number', required: true },
   { key: 'boxUnitPrice', label: '纸箱单价(元)', type: 'display' },
   { key: 'totalAmount', label: '总金额(元)', type: 'display' },
   { key: 'notes', label: '备注', type: 'textarea' },

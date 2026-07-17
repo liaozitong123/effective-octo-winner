@@ -33,11 +33,40 @@ function calcBoardWidth(width, height, boxType, cutCount) {
   return null
 }
 
+function formatSegment(value) {
+  return String(round(value, 4))
+}
+
+function calcReferenceCrease(width, height, boxType) {
+  if (boxType === '中封箱') {
+    return [width / 2, height, width, height, width / 2].map(formatSegment).join('+')
+  }
+  if (boxType === '平口箱') {
+    return [width / 2 + 0.3, height, width / 2 + 0.3].map(formatSegment).join('+')
+  }
+  if (boxType === '全盖箱') {
+    return [width, height, width].map(formatSegment).join('+')
+  }
+  return ''
+}
+
+function calcReferenceBoardQty(qty, cutCount, stitchType) {
+  const orderQty = toNumber(qty)
+  const cuts = toNumber(cutCount)
+  if (orderQty <= 0 || cuts <= 0) return ''
+  if (stitchType === '一片成') return round(orderQty / cuts, 4)
+  if (stitchType === '两片成') return round(orderQty * 2 / cuts, 4)
+  if (stitchType === '四片成') return round(orderQty * 4 / cuts, 4)
+  return ''
+}
+
 export function applyBoardCalculation(data, options = {}) {
   const next = { ...data }
   const specParts = parseSpec(next.spec)
   next.realBoardLength = ''
   next.realBoardWidth = ''
+  next.referenceCrease = ''
+  next.referenceBoardQty = calcReferenceBoardQty(next.qty, next.cutCount, next.stitchType)
 
   if (next.boxType && next.stitchType && specParts.length >= 2) {
     const [length, width, height = 0] = specParts
@@ -45,6 +74,9 @@ export function applyBoardCalculation(data, options = {}) {
     const realBoardWidth = calcBoardWidth(width, height, next.boxType, next.cutCount)
     next.realBoardLength = realBoardLength === null ? '' : round(realBoardLength, 4)
     next.realBoardWidth = realBoardWidth === null ? '' : round(realBoardWidth, 4)
+    if (specParts.length >= 3) {
+      next.referenceCrease = calcReferenceCrease(width, height, next.boxType)
+    }
   }
 
   const manualBoardLength = toNumber(next.boardLength)
