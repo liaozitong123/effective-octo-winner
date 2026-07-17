@@ -8,7 +8,7 @@
       <el-tag :type="row.status === '已收货' ? 'success' : ''" size="small">{{ row.status }}</el-tag>
     </template>
   </DataTable>
-  <FormDialog v-model="dialogVisible" :fields="fields" :isEdit="!!editId" :initialData="editData" :onSubmit="handleSubmit" />
+  <FormDialog v-model="dialogVisible" :fields="fields" :isEdit="!!editId" :initialData="editData" :onSubmit="handleSubmit" :onChange="onFormChange" />
 </template>
 
 <script setup>
@@ -17,12 +17,13 @@ import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
 import { purchaseOrdersAPI, suppliersAPI } from '../../api/purchase'
+import { STITCH_OPTIONS, applyBoardCalculation } from '../../utils/boardCalculation'
 
 const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
 const columns = [
   { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '采购单号' },
   { key: 'customerName', label: '客户' }, { key: 'supplierName', label: '供应商' }, { key: 'productName', label: '产品名称' }, { key: 'spec', label: '规格(cm)' },
-  { key: 'material', label: '客户材质' }, { key: 'boxType', label: '盒式' },
+  { key: 'material', label: '客户材质' }, { key: 'boxType', label: '盒式' }, { key: 'stitchType', label: '钉口' },
   { key: 'unitPrice', label: '客户平方单价' }, { key: 'qty', label: '数量' },
   { key: 'productionMaterial', label: '生产材质' }, { key: 'fluteType', label: '楞别' },
   { key: 'boardLength', label: '纸板长度' }, { key: 'boardWidth', label: '纸板宽度' },
@@ -36,6 +37,9 @@ const columns = [
 ]
 const fields = [
   { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
+  { key: 'spec', label: '规格(cm)', type: 'display' },
+  { key: 'boxType', label: '盒式', type: 'display' },
+  { key: 'stitchType', label: '钉口', type: 'select', options: STITCH_OPTIONS },
   { key: 'productionMaterial', label: '生产材质' },
   { key: 'boardLength', label: '纸板长度', type: 'number' },
   { key: 'boardWidth', label: '纸板宽度', type: 'number' },
@@ -54,7 +58,9 @@ const fields = [
   { key: 'actualAmount', label: '实收金额', type: 'number' },
   { key: 'notes', label: '备注', type: 'textarea' },
 ]
-function toApiData(f) { return { ...f, supplier: f.supplierId ? { id: Number(f.supplierId) } : null } }
+function calcForm(data) { return applyBoardCalculation(data) }
+function onFormChange(data) { return calcForm(data) }
+function toApiData(f) { return { ...calcForm(f), supplier: f.supplierId ? { id: Number(f.supplierId) } : null } }
 function fetchData(p) { return purchaseOrdersAPI.list(p) }
 function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
 function openEdit(row) { editId.value = row.id; editData.value = { ...row, supplierId: row.supplierId || '' }; dialogVisible.value = true }

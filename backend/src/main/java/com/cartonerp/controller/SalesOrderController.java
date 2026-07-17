@@ -75,6 +75,9 @@ public class SalesOrderController {
         ProductionOrder po = new ProductionOrder();
         po.setOrderNo(OrderNumberUtil.next("PRD"));
         po.setProductName(savedPuo.getProductName());
+        po.setSpec(savedPuo.getSpec());
+        po.setMaterial(savedPuo.getMaterial());
+        po.setBoxType(savedPuo.getBoxType());
         po.setCustomer(saved.getCustomer());
         po.setSupplier(savedPuo.getSupplier());
         po.setQty(savedPuo.getQty());

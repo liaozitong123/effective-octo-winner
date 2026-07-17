@@ -22,6 +22,7 @@ public class ProductionOrder {
     @Column(length = 200) private String spec;
     @Column(length = 120) private String material;     // 客户材质
     @Column(length = 30) private String boxType;        // 盒式
+    @Column(length = 20) private String stitchType;      // 钉口
     private Double unitPrice = 0.0;                      // 客户平方单价
     private Integer qty = 0;
     @Column(length = 20) private String unit = "个";
@@ -66,6 +67,7 @@ public class ProductionOrder {
     public String getSpec() { return spec; }
     public String getMaterial() { return material; }
     public String getBoxType() { return boxType; }
+    public String getStitchType() { return stitchType; }
     public Double getUnitPrice() { return unitPrice; }
     public Integer getQty() { return qty; }
     public String getStatus() { return status; }
@@ -82,6 +84,7 @@ public class ProductionOrder {
     public void setSpec(String s) { this.spec = s; }
     public void setMaterial(String m) { this.material = m; }
     public void setBoxType(String b) { this.boxType = b; }
+    public void setStitchType(String s) { this.stitchType = s; }
     public String getUnit() { return unit; }
     public void setUnit(String u) { this.unit = u; }
     public void setUnitPrice(Double u) { this.unitPrice = u; }

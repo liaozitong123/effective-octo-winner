@@ -30,6 +30,7 @@ public class PurchaseOrder {
     @Column(length = 120) private String productName;
     @Column(length = 120) private String material;
     @Column(length = 30) private String boxType;
+    @Column(length = 20) private String stitchType;
     @Column(length = 120) private String productionMaterial;
     @Column(length = 30) private String fluteType;
     private Double boardLength = 0.0;
@@ -89,6 +90,7 @@ public class PurchaseOrder {
     public String getProductName() { return productName; }
     public String getMaterial() { return material; }
     public String getBoxType() { return boxType; }
+    public String getStitchType() { return stitchType; }
     public String getProductionMaterial() { return productionMaterial; }
     public String getFluteType() { return fluteType; }
     public Double getBoardLength() { return boardLength; }
@@ -109,6 +111,7 @@ public class PurchaseOrder {
     public void setProductName(String p) { this.productName = p; }
     public void setMaterial(String m) { this.material = m; }
     public void setBoxType(String b) { this.boxType = b; }
+    public void setStitchType(String s) { this.stitchType = s; }
     public void setProductionMaterial(String m) { this.productionMaterial = m; }
     public void setFluteType(String f) { this.fluteType = f; }
     public void setBoardLength(Double l) { this.boardLength = l; }

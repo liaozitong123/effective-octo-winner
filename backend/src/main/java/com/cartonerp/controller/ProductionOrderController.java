@@ -4,6 +4,7 @@ import com.cartonerp.common.Result;
 import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.ProductionRecord;
 import com.cartonerp.repository.*;
+import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +64,7 @@ public class ProductionOrderController {
             salesOrderRepo.findById(o.getSalesOrder().getId()).ifPresent(o::setSalesOrder);
         o.setOrderNo(OrderNumberUtil.next("PRD"));
         if (o.getStatus() == null) o.setStatus("待排产");
+        applyBoardCalculation(o);
         return Result.ok(toMap(repo.save(o)), "创建成功");
     }
 
@@ -78,6 +80,7 @@ public class ProductionOrderController {
         if (o.getQty() != null) ex.setQty(o.getQty());
         if (o.getMaterial() != null) ex.setMaterial(o.getMaterial());
         if (o.getBoxType() != null) ex.setBoxType(o.getBoxType());
+        if (o.getStitchType() != null) ex.setStitchType(o.getStitchType());
         if (o.getUnitPrice() != null) ex.setUnitPrice(o.getUnitPrice());
         if (o.getProductionMaterial() != null) ex.setProductionMaterial(o.getProductionMaterial());
         if (o.getFluteType() != null) ex.setFluteType(o.getFluteType());
@@ -101,6 +104,7 @@ public class ProductionOrderController {
         if (o.getOrderArea() != null) ex.setOrderArea(o.getOrderArea());
         if (o.getWorkshop() != null) ex.setWorkshop(o.getWorkshop());
         if (o.getNotes() != null) ex.setNotes(o.getNotes());
+        applyBoardCalculation(ex);
         return Result.ok(toMap(repo.save(ex)), "更新成功");
     }
 
@@ -124,6 +128,7 @@ public class ProductionOrderController {
         m.put("customerName", o.getCustomer() != null ? o.getCustomer().getName() : "");
         m.put("productName", o.getProductName()); m.put("spec", o.getSpec());
         m.put("material", o.getMaterial()); m.put("boxType", o.getBoxType());
+        m.put("stitchType", o.getStitchType());
         m.put("unitPrice", o.getUnitPrice());
         m.put("supplierName", o.getSupplier() != null ? o.getSupplier().getName() : "");
         m.put("productionMaterial", o.getProductionMaterial()); m.put("fluteType", o.getFluteType());
@@ -141,5 +146,20 @@ public class ProductionOrderController {
         m.put("startDate", o.getStartDate()); m.put("finishDate", o.getFinishDate());
         m.put("workshop", o.getWorkshop()); m.put("notes", o.getNotes()); m.put("createdAt", o.getCreatedAt());
         return m;
+    }
+
+    private void applyBoardCalculation(ProductionOrder o) {
+        BoardCalculationUtil.Result result = BoardCalculationUtil.calculate(
+            o.getSpec(), o.getBoxType(), o.getStitchType(), o.getCutCount(), o.getBoardQty(),
+            o.getMaterialBasePrice(), o.getDiscountRate()
+        );
+        if (result == null) return;
+        o.setBoardLength(result.boardLength());
+        o.setBoardWidth(result.boardWidth());
+        o.setBoardArea(result.boardArea());
+        o.setTotalArea(result.totalArea());
+        o.setBoardUnitPrice(result.boardUnitPrice());
+        o.setBoardAmount(result.boardAmount());
+        o.setOrderArea(result.totalArea());
     }
 }

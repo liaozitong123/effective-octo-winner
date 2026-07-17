@@ -4,6 +4,7 @@ import com.cartonerp.common.Result;
 import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.repository.*;
+import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,7 @@ public class PurchaseOrderController {
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(o::setSupplier);
         // Auto-generate order number: PO-YYYYMMDDHHmmss
         o.setOrderNo(OrderNumberUtil.next("PO"));
+        applyBoardCalculation(o);
         PurchaseOrder saved = repo.save(o);
         businessService.onPurchaseReceived(saved);
 
@@ -51,6 +53,10 @@ public class PurchaseOrderController {
         ProductionOrder po = new ProductionOrder();
         po.setOrderNo(OrderNumberUtil.next("PRD"));
         po.setProductName(saved.getProductName() != null ? saved.getProductName() : saved.getMaterialName());
+        po.setSpec(saved.getSpec());
+        po.setMaterial(saved.getMaterial());
+        po.setBoxType(saved.getBoxType());
+        po.setStitchType(saved.getStitchType());
         po.setSupplier(saved.getSupplier());
         po.setQty(saved.getQty());
         po.setUnit(saved.getUnit() != null ? saved.getUnit() : "个");
@@ -97,6 +103,7 @@ public class PurchaseOrderController {
         if (o.getProductName() != null) ex.setProductName(o.getProductName());
         if (o.getMaterial() != null) ex.setMaterial(o.getMaterial());
         if (o.getBoxType() != null) ex.setBoxType(o.getBoxType());
+        if (o.getStitchType() != null) ex.setStitchType(o.getStitchType());
         if (o.getProductionMaterial() != null) ex.setProductionMaterial(o.getProductionMaterial());
         if (o.getFluteType() != null) ex.setFluteType(o.getFluteType());
         if (o.getBoardLength() != null) ex.setBoardLength(o.getBoardLength());
@@ -115,6 +122,7 @@ public class PurchaseOrderController {
         if (o.getActualQty() != null) ex.setActualQty(o.getActualQty());
         if (o.getActualAmount() != null) ex.setActualAmount(o.getActualAmount());
         if (o.getNotes() != null) ex.setNotes(o.getNotes());
+        applyBoardCalculation(ex);
         PurchaseOrder saved = repo.save(ex);
         businessService.onPurchaseReceived(saved);
 
@@ -143,7 +151,8 @@ public class PurchaseOrderController {
         m.put("expectedDate", o.getExpectedDate()); m.put("notes", o.getNotes());
         m.put("createdAt", o.getCreatedAt());
         m.put("productName", o.getProductName()); m.put("material", o.getMaterial());
-        m.put("boxType", o.getBoxType()); m.put("productionMaterial", o.getProductionMaterial());
+        m.put("boxType", o.getBoxType()); m.put("stitchType", o.getStitchType());
+        m.put("productionMaterial", o.getProductionMaterial());
         m.put("fluteType", o.getFluteType()); m.put("boardLength", o.getBoardLength());
         m.put("boardWidth", o.getBoardWidth()); m.put("boardQty", o.getBoardQty());
         m.put("cutCount", o.getCutCount()); m.put("crease", o.getCrease());
@@ -153,5 +162,19 @@ public class PurchaseOrderController {
         m.put("boardAmount", o.getBoardAmount()); m.put("signDate", o.getSignDate());
         m.put("actualQty", o.getActualQty()); m.put("actualAmount", o.getActualAmount());
         return m;
+    }
+
+    private void applyBoardCalculation(PurchaseOrder o) {
+        BoardCalculationUtil.Result result = BoardCalculationUtil.calculate(
+            o.getSpec(), o.getBoxType(), o.getStitchType(), o.getCutCount(), o.getBoardQty(),
+            o.getMaterialBasePrice(), o.getDiscountRate()
+        );
+        if (result == null) return;
+        o.setBoardLength(result.boardLength());
+        o.setBoardWidth(result.boardWidth());
+        o.setBoardArea(result.boardArea());
+        o.setTotalArea(result.totalArea());
+        o.setBoardUnitPrice(result.boardUnitPrice());
+        o.setBoardAmount(result.boardAmount());
     }
 }
