@@ -166,12 +166,8 @@ public class PurchaseOrderController {
 
     private void applyBoardCalculation(PurchaseOrder o) {
         BoardCalculationUtil.Result result = BoardCalculationUtil.calculate(
-            o.getSpec(), o.getBoxType(), o.getStitchType(), o.getCutCount(), o.getBoardQty(),
-            o.getMaterialBasePrice(), o.getDiscountRate()
+            o.getBoardLength(), o.getBoardWidth(), o.getBoardQty(), o.getMaterialBasePrice(), o.getDiscountRate()
         );
-        if (result == null) return;
-        o.setBoardLength(result.boardLength());
-        o.setBoardWidth(result.boardWidth());
         o.setBoardArea(result.boardArea());
         o.setTotalArea(result.totalArea());
         o.setBoardUnitPrice(result.boardUnitPrice());

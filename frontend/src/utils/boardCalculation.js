@@ -36,20 +36,26 @@ function calcBoardWidth(width, height, boxType, cutCount) {
 export function applyBoardCalculation(data, options = {}) {
   const next = { ...data }
   const specParts = parseSpec(next.spec)
-  if (!next.boxType || !next.stitchType || specParts.length < 2) return next
+  next.realBoardLength = ''
+  next.realBoardWidth = ''
 
-  const [length, width, height = 0] = specParts
-  const boardLength = calcBoardLength(length, width, next.boxType, next.stitchType)
-  const boardWidth = calcBoardWidth(width, height, next.boxType, next.cutCount)
-  if (boardLength === null || boardWidth === null) return next
+  if (next.boxType && next.stitchType && specParts.length >= 2) {
+    const [length, width, height = 0] = specParts
+    const realBoardLength = calcBoardLength(length, width, next.boxType, next.stitchType)
+    const realBoardWidth = calcBoardWidth(width, height, next.boxType, next.cutCount)
+    next.realBoardLength = realBoardLength === null ? '' : round(realBoardLength, 4)
+    next.realBoardWidth = realBoardWidth === null ? '' : round(realBoardWidth, 4)
+  }
 
-  const boardArea = round(boardLength * boardWidth / 10000, 6)
+  const manualBoardLength = toNumber(next.boardLength)
+  const manualBoardWidth = toNumber(next.boardWidth)
+  const boardArea = manualBoardLength > 0 && manualBoardWidth > 0
+    ? round(manualBoardLength * manualBoardWidth / 10000, 6)
+    : 0
   const totalArea = round(boardArea * toNumber(next.boardQty), 6)
   const boardUnitPrice = round(toNumber(next.materialBasePrice) * toNumber(next.discountRate, 1), 4)
   const boardAmount = round(totalArea * boardUnitPrice, 2)
 
-  next.boardLength = round(boardLength, 4)
-  next.boardWidth = round(boardWidth, 4)
   next.boardArea = boardArea
   next.totalArea = totalArea
   next.boardUnitPrice = boardUnitPrice

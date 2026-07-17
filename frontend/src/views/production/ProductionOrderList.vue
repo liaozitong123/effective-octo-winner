@@ -43,10 +43,10 @@ const fields = [
   { key: 'specNotes', label: '纸箱规格备注栏' },
   { key: 'productionMaterial', label: '生产材质' },
   { key: 'fluteType', label: '楞别' },
-  { key: 'boardLength', label: '纸板长度', type: 'number' },
-  { key: 'boardWidth', label: '纸板宽度', type: 'number' },
-  { key: 'boardQty', label: '纸板数量', type: 'number' },
   { key: 'cutCount', label: '开数', type: 'number' },
+  { key: 'boardLength', label: '纸板长度', type: 'number', hintKey: 'realBoardLength', hintLabel: '真实长度' },
+  { key: 'boardWidth', label: '纸板宽度', type: 'number', hintKey: 'realBoardWidth', hintLabel: '真实宽度' },
+  { key: 'boardQty', label: '纸板数量', type: 'number' },
   { key: 'crease', label: '凹压线' },
   { key: 'urgent', label: '急单', type: 'select', options: ['否','是'] },
   { key: 'orderArea', label: '下单面积', type: 'number' },
@@ -55,6 +55,10 @@ const fields = [
 
 function calcForm(data) { return applyBoardCalculation(data, { syncOrderArea: true }) }
 function onFormChange(data) { return calcForm(data) }
+function toApiData(form) {
+  const { realBoardLength, realBoardWidth, ...data } = calcForm(form)
+  return data
+}
 function fetchData(p) { return productionOrdersAPI.list(p) }
 function openEdit(row) { editId.value = row.id; editData.value = { ...row }; dialogVisible.value = true }
 async function handleDelete(row) {
@@ -63,7 +67,7 @@ async function handleDelete(row) {
   tableRef.value.loadData()
 }
 async function handleSubmit(form) {
-  if (editId.value) await productionOrdersAPI.update(editId.value, calcForm(form))
+  if (editId.value) await productionOrdersAPI.update(editId.value, toApiData(form))
   tableRef.value.loadData()
 }
 </script>

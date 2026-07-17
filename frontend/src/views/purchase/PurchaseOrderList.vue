@@ -41,10 +41,10 @@ const fields = [
   { key: 'boxType', label: '盒式', type: 'display' },
   { key: 'stitchType', label: '钉口', type: 'select', options: STITCH_OPTIONS },
   { key: 'productionMaterial', label: '生产材质' },
-  { key: 'boardLength', label: '纸板长度', type: 'number' },
-  { key: 'boardWidth', label: '纸板宽度', type: 'number' },
-  { key: 'boardQty', label: '纸板数量', type: 'number' },
   { key: 'cutCount', label: '开数', type: 'number' },
+  { key: 'boardLength', label: '纸板长度', type: 'number', hintKey: 'realBoardLength', hintLabel: '真实长度' },
+  { key: 'boardWidth', label: '纸板宽度', type: 'number', hintKey: 'realBoardWidth', hintLabel: '真实宽度' },
+  { key: 'boardQty', label: '纸板数量', type: 'number' },
   { key: 'crease', label: '压线' },
   { key: 'boardArea', label: '纸板面积', type: 'number' },
   { key: 'totalArea', label: '总面积', type: 'number' },
@@ -60,7 +60,10 @@ const fields = [
 ]
 function calcForm(data) { return applyBoardCalculation(data) }
 function onFormChange(data) { return calcForm(data) }
-function toApiData(f) { return { ...calcForm(f), supplier: f.supplierId ? { id: Number(f.supplierId) } : null } }
+function toApiData(f) {
+  const { realBoardLength, realBoardWidth, ...data } = calcForm(f)
+  return { ...data, supplier: f.supplierId ? { id: Number(f.supplierId) } : null }
+}
 function fetchData(p) { return purchaseOrdersAPI.list(p) }
 function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
 function openEdit(row) { editId.value = row.id; editData.value = { ...row, supplierId: row.supplierId || '' }; dialogVisible.value = true }

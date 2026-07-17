@@ -17,7 +17,10 @@
         :class="fieldClass(field)"
       >
         <span v-if="field.type === 'display'" class="display-value">{{ form[field.key] || '-' }}</span>
-        <el-input v-else-if="!field.type || field.type === 'text' || field.type === 'number'" v-model="form[field.key]" :type="field.type || 'text'" :readonly="field.readonly" :disabled="field.disabled" />
+        <div v-else-if="!field.type || field.type === 'text' || field.type === 'number'" :class="['input-line', { 'has-hint': field.hintKey }]">
+          <el-input v-model="form[field.key]" :type="field.type || 'text'" :readonly="field.readonly" :disabled="field.disabled" />
+          <span v-if="field.hintKey" class="field-hint">{{ fieldHintText(field) }}</span>
+        </div>
         <el-select v-else-if="field.type === 'select'" v-model="form[field.key]" placeholder="请选择" filterable clearable>
           <el-option v-for="opt in getFieldOptions(field)" :key="opt.value" :label="opt.label" :value="opt.value" />
         </el-select>
@@ -53,7 +56,13 @@ const formRef = ref(null)
 const form = reactive({})
 const rules = reactive({})
 const asyncOptions = reactive({})  // key → [{value, label}]
-const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea']
+const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth']
+
+function fieldHintText(field) {
+  const value = form[field.hintKey]
+  const text = value !== '' && value !== null && value !== undefined ? value : '-'
+  return `${field.hintLabel || '参考'}：${text}`
+}
 
 function fieldClass(field) {
   return {
@@ -69,6 +78,7 @@ watch(() => props.modelValue, (v) => {
     Object.keys(form).forEach(k => delete form[k])
     props.fields.forEach(f => {
       form[f.key] = props.initialData?.[f.key] ?? ''
+      if (f.hintKey && !(f.hintKey in form)) form[f.hintKey] = props.initialData?.[f.hintKey] ?? ''
       rules[f.key] = f.required ? [{ required: true, message: `请${f.type === 'select' ? '选择' : '输入'}${f.label}`, trigger: 'blur' }] : []
       // Load async options
       if (f.type === 'select' && f.optionsApi && !asyncOptions[f.key]) {
@@ -179,6 +189,29 @@ function handleClose() { formRef.value?.resetFields() }
   width: 100%;
 }
 
+.input-line {
+  width: 100%;
+}
+
+.input-line.has-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-line.has-hint :deep(.el-input) {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-hint {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 0.82rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .wide-field {
   grid-column: 1 / -1;
 }
@@ -226,6 +259,12 @@ function handleClose() { formRef.value?.resetFields() }
 
   .dialog-actions :deep(.el-button) {
     flex: 1;
+  }
+
+  .input-line.has-hint {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
   }
 }
 </style>
