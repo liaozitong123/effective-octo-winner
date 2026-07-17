@@ -87,6 +87,7 @@ public class SalesOrderController {
         po.setUnit(savedPuo.getUnit() != null ? savedPuo.getUnit() : "个");
         po.setProductionMaterial(savedPuo.getProductionMaterial());
         po.setFluteType(savedPuo.getFluteType());
+        po.setUnitPrice(savedPuo.getUnitPrice());
         po.setBoardLength(savedPuo.getBoardLength());
         po.setBoardWidth(savedPuo.getBoardWidth());
         po.setBoardQty(savedPuo.getBoardQty());
@@ -147,6 +148,7 @@ public class SalesOrderController {
         for (PurchaseOrder purchaseOrder : linkedOrders) {
             purchaseOrder.setSalesOrder(updated);
             purchaseOrder.setQty(updated.getQty());
+            purchaseOrder.setUnitPrice(updated.getUnitPrice());
             if (updated.getUnit() != null) purchaseOrder.setUnit(updated.getUnit());
             purchaseOrderRepo.save(purchaseOrder);
         }
