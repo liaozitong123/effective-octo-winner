@@ -56,7 +56,7 @@ const fields = [
   { key: 'boardAmount', label: '纸板金额', type: 'number' },
   { key: 'signDate', label: '签收日期', type: 'date' },
   { key: 'actualQty', label: '实收数量', type: 'number' },
-  { key: 'actualAmount', label: '实收金额', type: 'number' },
+  { key: 'actualAmount', label: '实收金额', type: 'number', readonly: true },
   { key: 'notes', label: '备注', type: 'textarea' },
 ]
 function calcForm(data) { return applyBoardCalculation(data) }

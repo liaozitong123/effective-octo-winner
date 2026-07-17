@@ -150,12 +150,14 @@ public class ProductionOrderController {
 
     private void applyBoardCalculation(ProductionOrder o) {
         BoardCalculationUtil.Result result = BoardCalculationUtil.calculate(
-            o.getBoardLength(), o.getBoardWidth(), o.getBoardQty(), o.getMaterialBasePrice(), o.getDiscountRate()
+            o.getBoardLength(), o.getBoardWidth(), o.getBoardQty(), o.getMaterialBasePrice(), o.getDiscountRate(),
+            o.getActualQty()
         );
         o.setBoardArea(result.boardArea());
         o.setTotalArea(result.totalArea());
         o.setBoardUnitPrice(result.boardUnitPrice());
         o.setBoardAmount(result.boardAmount());
+        o.setActualAmount(result.actualAmount());
         o.setOrderArea(result.totalArea());
     }
 }

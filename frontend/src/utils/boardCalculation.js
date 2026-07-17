@@ -87,11 +87,13 @@ export function applyBoardCalculation(data, options = {}) {
   const totalArea = round(boardArea * toNumber(next.boardQty), 6)
   const boardUnitPrice = round(toNumber(next.materialBasePrice) * toNumber(next.discountRate, 1), 4)
   const boardAmount = round(totalArea * boardUnitPrice, 2)
+  const actualAmount = round(toNumber(next.actualQty) * boardArea * boardUnitPrice, 2)
 
   next.boardArea = boardArea
   next.totalArea = totalArea
   next.boardUnitPrice = boardUnitPrice
   next.boardAmount = boardAmount
+  next.actualAmount = actualAmount
   if (options.syncOrderArea) next.orderArea = totalArea
 
   return next

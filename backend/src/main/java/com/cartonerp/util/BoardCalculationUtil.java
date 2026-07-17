@@ -3,18 +3,20 @@ package com.cartonerp.util;
 public final class BoardCalculationUtil {
     private BoardCalculationUtil() {}
 
-    public record Result(Double boardArea, Double totalArea, Double boardUnitPrice, Double boardAmount) {}
+    public record Result(Double boardArea, Double totalArea, Double boardUnitPrice, Double boardAmount,
+                         Double actualAmount) {}
 
     public static Result calculate(Double boardLength, Double boardWidth, Integer boardQty,
-                                   Double materialBasePrice, Double discountRate) {
+                                   Double materialBasePrice, Double discountRate, Integer actualQty) {
         double boardArea = safeDouble(boardLength) > 0 && safeDouble(boardWidth) > 0
             ? round6(safeDouble(boardLength) * safeDouble(boardWidth) / 10000.0)
             : 0.0;
         double totalArea = round6(boardArea * safeInt(boardQty));
         double boardUnitPrice = round4(safeDouble(materialBasePrice) * safeDiscount(discountRate));
         double boardAmount = round2(totalArea * boardUnitPrice);
+        double actualAmount = round2(safeInt(actualQty) * boardArea * boardUnitPrice);
 
-        return new Result(boardArea, totalArea, boardUnitPrice, boardAmount);
+        return new Result(boardArea, totalArea, boardUnitPrice, boardAmount, actualAmount);
     }
 
     private static int safeInt(Integer value) {
