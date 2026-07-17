@@ -37,6 +37,7 @@ const columns = [
 ]
 const fields = [
   { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
+  { key: 'qty', label: '下单数量', type: 'display' },
   { key: 'spec', label: '规格(cm)', type: 'display' },
   { key: 'boxType', label: '盒式', type: 'display' },
   { key: 'stitchType', label: '钉口', type: 'select', options: STITCH_OPTIONS },
