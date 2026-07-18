@@ -44,7 +44,7 @@ public class PurchaseOrder {
     private Double boardArea = 0.0;
     private Double totalArea = 0.0;
     private Double materialBasePrice = 0.0;
-    private Double discountRate = 1.0;
+    private Double discountRate = 100.0;
     private Double boardUnitPrice = 0.0;
     private Double profitRate = 0.0;
     private Double boardAmount = 0.0;

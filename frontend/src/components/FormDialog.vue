@@ -16,16 +16,22 @@
         :prop="field.key"
         :class="fieldClass(field)"
       >
-        <span v-if="field.type === 'display'" class="display-value">{{ form[field.key] || '-' }}</span>
+        <span v-if="field.type === 'display'" class="display-value">{{ displayText(form[field.key]) }}</span>
         <div v-else-if="!field.type || field.type === 'text' || field.type === 'number'" :class="['input-line', { 'has-hint': field.hintKey }]">
-          <el-input v-model="form[field.key]" :type="field.type || 'text'" :readonly="field.readonly" :disabled="field.disabled" />
+          <el-input
+            v-model="form[field.key]"
+            :type="field.type || 'text'"
+            :readonly="field.readonly"
+            :disabled="field.disabled"
+            @input="markChanged(field.key)"
+          />
           <span v-if="field.hintKey" class="field-hint">{{ fieldHintText(field) }}</span>
         </div>
-        <el-select v-else-if="field.type === 'select'" v-model="form[field.key]" placeholder="请选择" filterable clearable>
+        <el-select v-else-if="field.type === 'select'" v-model="form[field.key]" placeholder="请选择" filterable clearable @change="markChanged(field.key)">
           <el-option v-for="opt in getFieldOptions(field)" :key="opt.value" :label="opt.label" :value="opt.value" />
         </el-select>
-        <el-date-picker v-else-if="field.type === 'date'" v-model="form[field.key]" type="date" value-format="YYYY-MM-DD" style="width:100%" />
-        <el-input v-else-if="field.type === 'textarea'" v-model="form[field.key]" type="textarea" :rows="3" />
+        <el-date-picker v-else-if="field.type === 'date'" v-model="form[field.key]" type="date" value-format="YYYY-MM-DD" style="width:100%" @change="markChanged(field.key)" />
+        <el-input v-else-if="field.type === 'textarea'" v-model="form[field.key]" type="textarea" :rows="3" @input="markChanged(field.key)" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -56,7 +62,16 @@ const formRef = ref(null)
 const form = reactive({})
 const rules = reactive({})
 const asyncOptions = reactive({})  // key → [{value, label}]
+const lastChangedKey = ref('')
 const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth']
+
+function displayText(value) {
+  return value !== '' && value !== null && value !== undefined ? value : '-'
+}
+
+function markChanged(key) {
+  lastChangedKey.value = key
+}
 
 function fieldHintText(field) {
   const value = form[field.hintKey]
@@ -111,7 +126,9 @@ function getFieldOptions(field) {
 // Real-time field change callback
 watch(form, (newForm) => {
   if (props.onChange) {
-    const updated = props.onChange({ ...newForm })
+    const changedKey = lastChangedKey.value
+    lastChangedKey.value = ''
+    const updated = props.onChange({ ...newForm }, changedKey)
     if (updated) {
       Object.keys(updated).forEach(k => {
         if (k in form && form[k] !== updated[k]) form[k] = updated[k]

@@ -157,7 +157,7 @@ public class PurchaseOrderController {
         m.put("boardWidth", o.getBoardWidth()); m.put("boardQty", o.getBoardQty());
         m.put("cutCount", o.getCutCount()); m.put("crease", o.getCrease());
         m.put("boardArea", o.getBoardArea()); m.put("totalArea", o.getTotalArea());
-        m.put("materialBasePrice", o.getMaterialBasePrice()); m.put("discountRate", o.getDiscountRate());
+        m.put("materialBasePrice", o.getMaterialBasePrice()); m.put("discountRate", displayDiscountRate(o.getDiscountRate()));
         m.put("boardUnitPrice", o.getBoardUnitPrice()); m.put("profitRate", o.getProfitRate());
         m.put("boardAmount", o.getBoardAmount()); m.put("signDate", o.getSignDate());
         m.put("actualQty", o.getActualQty()); m.put("actualAmount", o.getActualAmount());
@@ -167,12 +167,17 @@ public class PurchaseOrderController {
     private void applyBoardCalculation(PurchaseOrder o) {
         BoardCalculationUtil.Result result = BoardCalculationUtil.calculate(
             o.getBoardLength(), o.getBoardWidth(), o.getBoardQty(), o.getMaterialBasePrice(), o.getDiscountRate(),
-            o.getActualQty()
+            o.getBoardUnitPrice(), o.getUnitPrice(), o.getActualQty()
         );
         o.setBoardArea(result.boardArea());
         o.setTotalArea(result.totalArea());
         o.setBoardUnitPrice(result.boardUnitPrice());
+        o.setProfitRate(result.profitRate());
         o.setBoardAmount(result.boardAmount());
         o.setActualAmount(result.actualAmount());
+    }
+
+    private Double displayDiscountRate(Double rate) {
+        return rate != null && rate > 0 && rate <= 2 ? rate * 100 : rate;
     }
 }

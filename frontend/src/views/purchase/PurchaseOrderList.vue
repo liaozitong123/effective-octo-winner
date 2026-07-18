@@ -29,13 +29,14 @@ const columns = [
   { key: 'boardLength', label: '纸板长度' }, { key: 'boardWidth', label: '纸板宽度' },
   { key: 'boardQty', label: '纸板数量' }, { key: 'cutCount', label: '开数' },
   { key: 'boardArea', label: '纸板面积' }, { key: 'totalArea', label: '总面积' },
-  { key: 'materialBasePrice', label: '材质基价' }, { key: 'discountRate', label: '折率' },
-  { key: 'boardUnitPrice', label: '纸板平方单价' }, { key: 'profitRate', label: '毛利率' },
+  { key: 'materialBasePrice', label: '材质基价' }, { key: 'discountRate', label: '折率(%)' },
+  { key: 'boardUnitPrice', label: '纸板平方单价' }, { key: 'profitRate', label: '毛利率(%)' },
   { key: 'boardAmount', label: '纸板金额' },
   { key: 'signDate', label: '签收日期' }, { key: 'actualQty', label: '实收数量' },
   { key: 'actualAmount', label: '实收金额' },
 ]
 const fields = [
+  { key: 'unitPrice', label: '客户平方单价', type: 'display' },
   { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
   { key: 'qty', label: '下单数量', type: 'display' },
   { key: 'spec', label: '规格(cm)', type: 'display' },
@@ -50,24 +51,42 @@ const fields = [
   { key: 'boardArea', label: '纸板面积', type: 'number' },
   { key: 'totalArea', label: '总面积', type: 'number' },
   { key: 'materialBasePrice', label: '材质基价', type: 'number' },
-  { key: 'discountRate', label: '折率', type: 'number' },
+  { key: 'discountRate', label: '折率(%)', type: 'number' },
   { key: 'boardUnitPrice', label: '纸板平方单价', type: 'number' },
-  { key: 'profitRate', label: '毛利率', type: 'number' },
+  { key: 'profitRate', label: '毛利率(%)', type: 'number', readonly: true },
   { key: 'boardAmount', label: '纸板金额', type: 'number' },
   { key: 'signDate', label: '签收日期', type: 'date' },
   { key: 'actualQty', label: '实收数量', type: 'number' },
   { key: 'actualAmount', label: '实收金额', type: 'number', readonly: true },
   { key: 'notes', label: '备注', type: 'textarea' },
 ]
-function calcForm(data) { return applyBoardCalculation(data) }
-function onFormChange(data) { return calcForm(data) }
+function shouldAutoBoardUnitPrice(data, changedKey) {
+  const currentPrice = Number(data.boardUnitPrice)
+  return ['materialBasePrice', 'discountRate'].includes(changedKey)
+    || data.boardUnitPrice === ''
+    || data.boardUnitPrice === null
+    || data.boardUnitPrice === undefined
+    || (Number.isFinite(currentPrice) && currentPrice <= 0)
+}
+function calcForm(data, changedKey) {
+  return applyBoardCalculation(data, { autoBoardUnitPrice: shouldAutoBoardUnitPrice(data, changedKey) })
+}
+function onFormChange(data, changedKey) { return calcForm(data, changedKey) }
 function toApiData(f) {
   const { realBoardLength, realBoardWidth, referenceCrease, referenceBoardQty, ...data } = calcForm(f)
   return { ...data, supplier: f.supplierId ? { id: Number(f.supplierId) } : null }
 }
 function fetchData(p) { return purchaseOrdersAPI.list(p) }
 function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
-function openEdit(row) { editId.value = row.id; editData.value = { ...row, supplierId: row.supplierId || '' }; dialogVisible.value = true }
+function displayDiscountRate(rate) {
+  const value = Number(rate)
+  return Number.isFinite(value) && value > 0 && value <= 2 ? value * 100 : rate
+}
+function openEdit(row) {
+  editId.value = row.id
+  editData.value = { ...row, discountRate: displayDiscountRate(row.discountRate), supplierId: row.supplierId || '' }
+  dialogVisible.value = true
+}
 async function handleDelete(row) {
   await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
   await purchaseOrdersAPI.delete(row.id); tableRef.value.loadData()

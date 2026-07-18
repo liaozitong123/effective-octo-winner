@@ -45,7 +45,7 @@ public class ProductionOrder {
     private Double boardArea = 0.0;                         // 纸板面积
     private Double totalArea = 0.0;                         // 总面积 = 纸板面积 × 纸板数量
     private Double materialBasePrice = 0.0;                 // 材质基价
-    private Double discountRate = 1.0;                      // 折率
+    private Double discountRate = 100.0;                    // 折率(%)
     private Double boardUnitPrice = 0.0;                    // 纸板平方单价 = 材质基价 × 折率
     private Double profitRate = 0.0;                        // 毛利率
     private Double boardAmount = 0.0;                       // 纸板金额

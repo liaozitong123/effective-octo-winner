@@ -5,6 +5,10 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback
 }
 
+function hasValue(value) {
+  return value !== null && value !== undefined && String(value).trim() !== ''
+}
+
 function round(value, digits) {
   const base = 10 ** digits
   return Math.round((value + Number.EPSILON) * base) / base
@@ -85,13 +89,23 @@ export function applyBoardCalculation(data, options = {}) {
     ? round(manualBoardLength * manualBoardWidth / 10000, 6)
     : 0
   const totalArea = round(boardArea * toNumber(next.boardQty), 6)
-  const boardUnitPrice = round(toNumber(next.materialBasePrice) * toNumber(next.discountRate, 1), 4)
+  let boardUnitPrice = hasValue(next.boardUnitPrice) ? toNumber(next.boardUnitPrice) : 0
+  if (options.autoBoardUnitPrice !== false && hasValue(next.materialBasePrice) && hasValue(next.discountRate)) {
+    boardUnitPrice = round(toNumber(next.materialBasePrice) * toNumber(next.discountRate) / 100, 4)
+    next.boardUnitPrice = boardUnitPrice
+  } else if (!hasValue(next.boardUnitPrice)) {
+    next.boardUnitPrice = ''
+  }
   const boardAmount = round(totalArea * boardUnitPrice, 2)
   const actualAmount = round(toNumber(next.actualQty) * boardArea * boardUnitPrice, 2)
+  const customerUnitPrice = toNumber(next.unitPrice)
+  const profitRate = customerUnitPrice > 0 && hasValue(next.boardUnitPrice)
+    ? round((customerUnitPrice - boardUnitPrice) / customerUnitPrice * 100, 2)
+    : ''
 
   next.boardArea = boardArea
   next.totalArea = totalArea
-  next.boardUnitPrice = boardUnitPrice
+  next.profitRate = profitRate
   next.boardAmount = boardAmount
   next.actualAmount = actualAmount
   if (options.syncOrderArea) next.orderArea = totalArea

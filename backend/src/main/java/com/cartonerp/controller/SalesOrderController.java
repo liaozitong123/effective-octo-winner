@@ -155,7 +155,7 @@ public class SalesOrderController {
     }
 
     private List<PurchaseOrder> findLegacyPurchaseOrders(SalesOrder salesOrder) {
-        return purchaseOrderRepo.findAll().stream()
+        List<PurchaseOrder> candidates = purchaseOrderRepo.findAll().stream()
             .filter(p -> p.getSalesOrder() == null)
             .filter(p -> sameValue(p.getMaterialType(), "纸板"))
             .filter(p -> sameCustomer(p, salesOrder))
@@ -165,8 +165,13 @@ public class SalesOrderController {
             .filter(p -> sameValue(p.getMaterial(), salesOrder.getMaterial()))
             .filter(p -> sameValue(p.getBoxType(), salesOrder.getBoxType()))
             .filter(p -> sameValue(p.getFluteType(), salesOrder.getFluteType()))
+            .toList();
+
+        List<PurchaseOrder> sameStampOrders = candidates.stream()
             .filter(p -> sameOrderNumberStamp(p.getOrderNo(), salesOrder.getOrderNo()))
             .toList();
+        if (!sameStampOrders.isEmpty()) return sameStampOrders;
+        return candidates.size() == 1 ? candidates : List.of();
     }
 
     private boolean sameCustomer(PurchaseOrder purchaseOrder, SalesOrder salesOrder) {
