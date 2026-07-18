@@ -53,6 +53,7 @@ public class SalesOrderController {
             customerRepo.findById(o.getCustomer().getId()).ifPresent(o::setCustomer);
         // Auto-generate order number: SO-YYYYMMDDHHmmss
         o.setOrderNo(OrderNumberUtil.next("SO"));
+        applyAmountCalculation(o);
         SalesOrder saved = repo.save(o);
 
         // Auto-create purchase order
@@ -120,6 +121,7 @@ public class SalesOrderController {
         if (o.getStatus() != null) ex.setStatus(o.getStatus());
         if (o.getDeliveryDate() != null) ex.setDeliveryDate(o.getDeliveryDate());
         if (o.getNotes() != null) ex.setNotes(o.getNotes());
+        applyAmountCalculation(ex);
         SalesOrder updated = repo.save(ex);
 
         syncLinkedPurchaseOrders(updated);
@@ -230,5 +232,15 @@ public class SalesOrderController {
         m.put("deliveryDate", o.getDeliveryDate()); m.put("notes", o.getNotes());
         m.put("createdAt", o.getCreatedAt());
         return m;
+    }
+
+    private void applyAmountCalculation(SalesOrder o) {
+        double qty = o.getQty() != null ? o.getQty() : 0;
+        double boxUnitPrice = o.getBoxUnitPrice() != null ? o.getBoxUnitPrice() : 0.0;
+        o.setTotalAmount(round2(qty * boxUnitPrice));
+    }
+
+    private double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }

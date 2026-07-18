@@ -42,7 +42,7 @@ const fields = [
   { key: 'singleArea', label: '单个面积(㎡)', type: 'display' },
   { key: 'unitPrice', label: '客户平方单价', type: 'number' },
   { key: 'qty', label: '下单数量', type: 'number', required: true },
-  { key: 'boxUnitPrice', label: '纸箱单价(元)', type: 'display' },
+  { key: 'boxUnitPrice', label: '纸箱单价(元)', type: 'number', hintKey: 'referenceBoxUnitPrice', hintLabel: '参考单价' },
   { key: 'totalAmount', label: '总金额(元)', type: 'display' },
   { key: 'notes', label: '备注', type: 'textarea' },
 ]
@@ -73,9 +73,10 @@ function calcForm(data) {
   const sa = parseFloat(data.singleArea) || 0
   const up = parseFloat(data.unitPrice) || 0
   const qty = parseInt(data.qty) || 0
-  const boxPrice = parseFloat((sa * up).toFixed(2))
-  data.boxUnitPrice = boxPrice > 0 ? parseFloat(boxPrice.toFixed(2)) : 0
-  data.totalAmount = parseFloat((qty * data.boxUnitPrice).toFixed(2)) || 0
+  const referenceBoxPrice = parseFloat((sa * up).toFixed(2))
+  data.referenceBoxUnitPrice = referenceBoxPrice > 0 ? parseFloat(referenceBoxPrice.toFixed(2)) : ''
+  const manualBoxPrice = parseFloat(data.boxUnitPrice) || 0
+  data.totalAmount = parseFloat((qty * manualBoxPrice).toFixed(2)) || 0
   return data
 }
 
@@ -90,7 +91,7 @@ async function handleDelete(row) {
   tableRef.value.loadData()
 }
 async function handleSubmit(form) {
-  const data = calcForm({ ...form, customer: form.customerId ? { id: Number(form.customerId) } : null })
+  const { referenceBoxUnitPrice, ...data } = calcForm({ ...form, customer: form.customerId ? { id: Number(form.customerId) } : null })
   if (editId.value) await salesOrdersAPI.update(editId.value, data)
   else await salesOrdersAPI.create(data)
   tableRef.value.loadData()
