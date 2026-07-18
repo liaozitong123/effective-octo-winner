@@ -21,7 +21,7 @@ import { STITCH_OPTIONS, applyBoardCalculation } from '../../utils/boardCalculat
 
 const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
 const columns = [
-  { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '采购单号' },
+  { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '采购单号' }, { key: 'createdDate', label: '建立日期' },
   { key: 'customerName', label: '客户' }, { key: 'supplierName', label: '供应商' }, { key: 'productName', label: '产品名称' }, { key: 'spec', label: '规格(cm)' },
   { key: 'material', label: '客户材质' }, { key: 'boxType', label: '盒式' }, { key: 'stitchType', label: '钉口' },
   { key: 'unitPrice', label: '客户平方单价' }, { key: 'qty', label: '下单数量' },

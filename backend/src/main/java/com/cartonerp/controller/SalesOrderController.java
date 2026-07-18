@@ -17,6 +17,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -221,6 +223,7 @@ public class SalesOrderController {
     private Map<String, Object> toMap(SalesOrder o) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", o.getId()); m.put("orderNo", o.getOrderNo());
+        m.put("createdDate", toCreatedDate(o.getCreatedAt()));
         m.put("customerName", o.getCustomer() != null ? o.getCustomer().getName() : "");
         m.put("customerId", o.getCustomer() != null ? o.getCustomer().getId() : null);
         m.put("productName", o.getProductName()); m.put("spec", o.getSpec());
@@ -242,5 +245,9 @@ public class SalesOrderController {
 
     private double round2(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    private LocalDate toCreatedDate(LocalDateTime createdAt) {
+        return createdAt != null ? createdAt.toLocalDate() : null;
     }
 }

@@ -57,6 +57,11 @@ public class PurchaseOrder {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public PurchaseOrder() {}
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+    }
+
     public Long getId() { return id; }
     public String getOrderNo() { return orderNo; }
     public Supplier getSupplier() { return supplier; }

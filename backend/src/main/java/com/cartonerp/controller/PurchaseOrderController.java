@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -141,6 +143,7 @@ public class PurchaseOrderController {
     private Map<String, Object> toMap(PurchaseOrder o) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", o.getId()); m.put("orderNo", o.getOrderNo());
+        m.put("createdDate", toCreatedDate(o.getCreatedAt()));
         m.put("supplierName", o.getSupplier() != null ? o.getSupplier().getName() : "");
         m.put("supplierId", o.getSupplier() != null ? o.getSupplier().getId() : null);
         m.put("customerName", o.getCustomer() != null ? o.getCustomer().getName() : "");
@@ -179,5 +182,9 @@ public class PurchaseOrderController {
 
     private Double displayDiscountRate(Double rate) {
         return rate != null && rate > 0 && rate <= 2 ? rate * 100 : rate;
+    }
+
+    private LocalDate toCreatedDate(LocalDateTime createdAt) {
+        return createdAt != null ? createdAt.toLocalDate() : null;
     }
 }

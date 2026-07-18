@@ -23,7 +23,7 @@ const editId = ref(null)
 const editData = ref({})
 
 const columns = [
-  { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '订单号' },
+  { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '建立日期' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
   { key: 'spec', label: '规格(cm)' }, { key: 'material', label: '客户材质' },
   { key: 'boxType', label: '盒式' }, { key: 'fluteType', label: '楞别' }, { key: 'singleArea', label: '单个面积' }, { key: 'qty', label: '下单数量' },

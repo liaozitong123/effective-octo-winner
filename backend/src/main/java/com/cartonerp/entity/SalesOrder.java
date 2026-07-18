@@ -32,6 +32,11 @@ public class SalesOrder {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public SalesOrder() {}
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+    }
+
     public Long getId() { return id; }
     public String getOrderNo() { return orderNo; }
     public Customer getCustomer() { return customer; }
