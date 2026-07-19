@@ -11,7 +11,10 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 @RestController
@@ -21,32 +24,46 @@ public class PurchaseOrderController {
     @Autowired private SupplierRepository supplierRepo;
     @Autowired private ProductionOrderRepository productionOrderRepo;
     @Autowired private com.cartonerp.service.BusinessService businessService;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
                                                    @RequestParam(defaultValue = "all") String signStatus,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
-        Specification<PurchaseOrder> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            if (!q.isEmpty()) {
-                String p = "%" + q + "%";
-                predicates.add(cb.or(
-                    cb.like(root.get("orderNo"), p),
-                    cb.like(root.get("materialName"), p),
-                    cb.like(root.get("productName"), p),
-                    cb.like(root.join("salesOrder", JoinType.LEFT).get("orderNo"), p)
-                ));
-            }
-            if ("signed".equals(signStatus)) {
-                predicates.add(cb.isNotNull(root.get("signDate")));
-            } else if ("unsigned".equals(signStatus)) {
-                predicates.add(cb.isNull(root.get("signDate")));
-            }
-            return predicates.isEmpty() ? null : cb.and(predicates.toArray(new Predicate[0]));
-        };
-        Page<PurchaseOrder> pg = repo.findAll(spec, PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "id")));
-        return Result.okWithTotal(pg.getContent().stream().map(this::toMap).toList(), pg.getTotalElements());
+        List<Object> params = new ArrayList<>();
+        String where = buildListWhere(q, signStatus, params);
+        Long total = jdbcTemplate.queryForObject(
+            "select count(*) from purchase_orders po "
+                + "left join sales_orders so on po.sales_order_id = so.id "
+                + where,
+            Long.class,
+            params.toArray()
+        );
+
+        List<Object> listParams = new ArrayList<>(params);
+        listParams.add(Math.max(perPage, 1));
+        listParams.add(Math.max(page - 1, 0) * Math.max(perPage, 1));
+        List<Map<String, Object>> rows = jdbcTemplate.query(
+            "select po.id, po.order_no, po.sales_order_id, so.order_no as sales_order_no, "
+                + "po.order_date, s.name as supplier_name, po.supplier_id, c.name as customer_name, "
+                + "po.customer_id, po.material_type, po.material_name, po.spec, po.qty, po.unit, "
+                + "po.unit_price, po.total_amount, po.status, po.expected_date, po.notes, "
+                + "po.created_at, po.product_name, po.material, po.box_type, po.stitch_type, "
+                + "po.production_material, po.flute_type, po.board_length, po.board_width, "
+                + "po.board_qty, po.cut_count, po.crease, po.board_area, po.total_area, "
+                + "po.material_base_price, po.discount_rate, po.board_unit_price, po.profit_rate, "
+                + "po.board_amount, po.sign_date, po.actual_qty, po.actual_amount "
+                + "from purchase_orders po "
+                + "left join sales_orders so on po.sales_order_id = so.id "
+                + "left join suppliers s on po.supplier_id = s.id "
+                + "left join customers c on po.customer_id = c.id "
+                + where
+                + " order by po.id desc limit ? offset ?",
+            (rs, rowNum) -> toListMap(rs),
+            listParams.toArray()
+        );
+        return Result.okWithTotal(rows, total != null ? total : 0);
     }
 
     @GetMapping("/{id}")
@@ -152,6 +169,85 @@ public class PurchaseOrderController {
     }
 
     @DeleteMapping("/{id}") public Result<?> delete(@PathVariable Long id) { repo.deleteById(id); return Result.ok(null, "删除成功"); }
+
+    private String buildListWhere(String q, String signStatus, List<Object> params) {
+        List<String> clauses = new ArrayList<>();
+        if (q != null && !q.isBlank()) {
+            String p = "%" + q.trim() + "%";
+            clauses.add("(po.order_no like ? or po.material_name like ? or po.product_name like ? or so.order_no like ?)");
+            params.add(p);
+            params.add(p);
+            params.add(p);
+            params.add(p);
+        }
+        if ("signed".equals(signStatus)) {
+            clauses.add("po.sign_date is not null");
+        } else if ("unsigned".equals(signStatus)) {
+            clauses.add("po.sign_date is null");
+        }
+        return clauses.isEmpty() ? "" : " where " + String.join(" and ", clauses);
+    }
+
+    private Map<String, Object> toListMap(ResultSet rs) throws SQLException {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", numberValue(rs, "id"));
+        m.put("orderNo", rs.getString("order_no"));
+        m.put("salesOrderId", numberValue(rs, "sales_order_id"));
+        m.put("salesOrderNo", safeString(rs, "sales_order_no"));
+        m.put("orderDate", rs.getString("order_date"));
+        m.put("supplierName", safeString(rs, "supplier_name"));
+        m.put("supplierId", numberValue(rs, "supplier_id"));
+        m.put("customerName", safeString(rs, "customer_name"));
+        m.put("customerId", numberValue(rs, "customer_id"));
+        m.put("materialType", rs.getString("material_type"));
+        m.put("materialName", rs.getString("material_name"));
+        m.put("spec", rs.getString("spec"));
+        m.put("qty", numberValue(rs, "qty"));
+        m.put("unit", rs.getString("unit"));
+        m.put("unitPrice", numberValue(rs, "unit_price"));
+        m.put("totalAmount", numberValue(rs, "total_amount"));
+        m.put("status", rs.getString("status"));
+        m.put("expectedDate", rs.getString("expected_date"));
+        m.put("notes", rs.getString("notes"));
+        m.put("createdAt", rs.getString("created_at"));
+        m.put("productName", rs.getString("product_name"));
+        m.put("material", rs.getString("material"));
+        m.put("boxType", rs.getString("box_type"));
+        m.put("stitchType", rs.getString("stitch_type"));
+        m.put("productionMaterial", rs.getString("production_material"));
+        m.put("fluteType", rs.getString("flute_type"));
+        m.put("boardLength", numberValue(rs, "board_length"));
+        m.put("boardWidth", numberValue(rs, "board_width"));
+        m.put("boardQty", numberValue(rs, "board_qty"));
+        m.put("cutCount", numberValue(rs, "cut_count"));
+        m.put("crease", rs.getString("crease"));
+        m.put("boardArea", numberValue(rs, "board_area"));
+        m.put("totalArea", numberValue(rs, "total_area"));
+        m.put("materialBasePrice", numberValue(rs, "material_base_price"));
+        m.put("discountRate", displayDiscountRate(doubleValue(rs, "discount_rate")));
+        m.put("boardUnitPrice", numberValue(rs, "board_unit_price"));
+        m.put("profitRate", numberValue(rs, "profit_rate"));
+        m.put("boardAmount", numberValue(rs, "board_amount"));
+        m.put("signDate", rs.getString("sign_date"));
+        m.put("actualQty", numberValue(rs, "actual_qty"));
+        m.put("actualAmount", numberValue(rs, "actual_amount"));
+        return m;
+    }
+
+    private String safeString(ResultSet rs, String column) throws SQLException {
+        String value = rs.getString(column);
+        return value != null ? value : "";
+    }
+
+    private Number numberValue(ResultSet rs, String column) throws SQLException {
+        Object value = rs.getObject(column);
+        return value instanceof Number number ? number : null;
+    }
+
+    private Double doubleValue(ResultSet rs, String column) throws SQLException {
+        Number value = numberValue(rs, column);
+        return value != null ? value.doubleValue() : null;
+    }
 
     private Map<String, Object> toMap(PurchaseOrder o) {
         Map<String, Object> m = new LinkedHashMap<>();
