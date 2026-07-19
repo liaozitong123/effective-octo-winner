@@ -28,7 +28,8 @@ public class SalesOrder {
     @Column(nullable = false) private Double totalAmount = 0.0;
     @Column(length = 30) private String status = "待生产";
     private LocalDate deliveryDate;
-    @Column(columnDefinition = "TEXT") private String notes;
+    @Lob
+    @Column(columnDefinition = "LONGTEXT") private String notes;
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public SalesOrder() {}

@@ -32,6 +32,30 @@
         </el-select>
         <el-date-picker v-else-if="field.type === 'date'" v-model="form[field.key]" type="date" value-format="YYYY-MM-DD" style="width:100%" @change="markChanged(field.key)" />
         <el-input v-else-if="field.type === 'textarea'" v-model="form[field.key]" type="textarea" :rows="3" @input="markChanged(field.key)" />
+        <div v-else-if="field.type === 'image-note'" class="image-note-editor">
+          <div v-if="isImageValue(form[field.key])" class="image-note-preview">
+            <img :src="form[field.key]" alt="备注图片" />
+          </div>
+          <el-input
+            v-else
+            v-model="form[field.key]"
+            type="textarea"
+            :rows="4"
+            placeholder="输入文字备注，或选择图片"
+            @input="markChanged(field.key)"
+          />
+          <div class="image-note-actions">
+            <el-button size="small" @click="triggerImageInput(field.key)">选择图片</el-button>
+            <el-button v-if="form[field.key]" size="small" type="danger" plain @click="clearImageNote(field.key)">清空备注</el-button>
+          </div>
+          <input
+            :ref="el => setImageInputRef(field.key, el)"
+            class="hidden-file-input"
+            type="file"
+            accept="image/*"
+            @change="handleImageSelect(field.key, $event)"
+          />
+        </div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -45,6 +69,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
   modelValue: Boolean,
@@ -63,6 +88,7 @@ const form = reactive({})
 const rules = reactive({})
 const asyncOptions = reactive({})  // key → [{value, label}]
 const lastChangedKey = ref('')
+const imageInputRefs = {}
 const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth']
 
 function displayText(value) {
@@ -81,9 +107,74 @@ function fieldHintText(field) {
 
 function fieldClass(field) {
   return {
-    'wide-field': field.type === 'textarea' || field.full,
+    'wide-field': field.type === 'textarea' || field.type === 'image-note' || field.full,
     'display-field': field.type === 'display',
     'calculated-field': field.type === 'display' && displayKeys.includes(field.key),
+  }
+}
+
+function isImageValue(value) {
+  return typeof value === 'string' && value.startsWith('data:image/')
+}
+
+function setImageInputRef(key, el) {
+  if (el) imageInputRefs[key] = el
+}
+
+function triggerImageInput(key) {
+  imageInputRefs[key]?.click()
+}
+
+function clearImageNote(key) {
+  form[key] = ''
+  markChanged(key)
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = src
+  })
+}
+
+async function compressImage(file) {
+  const dataUrl = await readFileAsDataUrl(file)
+  const image = await loadImage(dataUrl)
+  const maxSide = 900
+  const scale = Math.min(1, maxSide / Math.max(image.width, image.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(image.width * scale))
+  canvas.height = Math.max(1, Math.round(image.height * scale))
+  const ctx = canvas.getContext('2d')
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+  return canvas.toDataURL('image/jpeg', 0.78)
+}
+
+async function handleImageSelect(key, event) {
+  const input = event.target
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    ElMessage.warning('请选择图片文件')
+    return
+  }
+  try {
+    form[key] = await compressImage(file)
+    markChanged(key)
+  } catch {
+    ElMessage.error('图片读取失败')
   }
 }
 
@@ -146,7 +237,9 @@ async function handleSubmit() {
   try {
     await props.onSubmit({ ...form })
     visible.value = false
-  } catch(e) {}
+  } catch(e) {
+    ElMessage.error(e?.response?.data?.message || '保存失败，请检查后端服务是否正常')
+  }
   submitting.value = false
 }
 

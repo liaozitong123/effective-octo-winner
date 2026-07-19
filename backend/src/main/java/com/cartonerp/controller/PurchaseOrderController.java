@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController
@@ -25,12 +23,21 @@ public class PurchaseOrderController {
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
+                                                   @RequestParam(defaultValue = "all") String signStatus,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
         Specification<PurchaseOrder> spec = (root, query, cb) -> {
-            if (q.isEmpty()) return null;
-            String p = "%" + q + "%";
-            return cb.or(cb.like(root.get("orderNo"), p), cb.like(root.get("materialName"), p));
+            List<Predicate> predicates = new ArrayList<>();
+            if (!q.isEmpty()) {
+                String p = "%" + q + "%";
+                predicates.add(cb.or(cb.like(root.get("orderNo"), p), cb.like(root.get("materialName"), p)));
+            }
+            if ("signed".equals(signStatus)) {
+                predicates.add(cb.isNotNull(root.get("signDate")));
+            } else if ("unsigned".equals(signStatus)) {
+                predicates.add(cb.isNull(root.get("signDate")));
+            }
+            return predicates.isEmpty() ? null : cb.and(predicates.toArray(new Predicate[0]));
         };
         Page<PurchaseOrder> pg = repo.findAll(spec, PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "id")));
         return Result.okWithTotal(pg.getContent().stream().map(this::toMap).toList(), pg.getTotalElements());
@@ -143,14 +150,14 @@ public class PurchaseOrderController {
     private Map<String, Object> toMap(PurchaseOrder o) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", o.getId()); m.put("orderNo", o.getOrderNo());
-        m.put("createdDate", toCreatedDate(o.getCreatedAt()));
+        m.put("orderDate", o.getOrderDate());
         m.put("supplierName", o.getSupplier() != null ? o.getSupplier().getName() : "");
         m.put("supplierId", o.getSupplier() != null ? o.getSupplier().getId() : null);
         m.put("customerName", o.getCustomer() != null ? o.getCustomer().getName() : "");
         m.put("materialType", o.getMaterialType()); m.put("materialName", o.getMaterialName());
         m.put("spec", o.getSpec()); m.put("qty", o.getQty()); m.put("unit", o.getUnit());
         m.put("unitPrice", o.getUnitPrice()); m.put("totalAmount", o.getTotalAmount());
-        m.put("status", o.getStatus()); m.put("orderDate", o.getOrderDate());
+        m.put("status", o.getStatus());
         m.put("expectedDate", o.getExpectedDate()); m.put("notes", o.getNotes());
         m.put("createdAt", o.getCreatedAt());
         m.put("productName", o.getProductName()); m.put("material", o.getMaterial());
@@ -184,7 +191,4 @@ public class PurchaseOrderController {
         return rate != null && rate > 0 && rate <= 2 ? rate * 100 : rate;
     }
 
-    private LocalDate toCreatedDate(LocalDateTime createdAt) {
-        return createdAt != null ? createdAt.toLocalDate() : null;
-    }
 }

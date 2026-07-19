@@ -1,18 +1,35 @@
 <template>
-  <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索采购单号..."
-    @add="openAdd" @edit="openEdit" @delete="handleDelete">
-    <template #materialType="{ row }">
-      <el-tag :type="row.materialType === '纸板' ? '' : 'warning'" size="small">{{ row.materialType }}</el-tag>
-    </template>
-    <template #status="{ row }">
-      <el-tag :type="row.status === '已收货' ? 'success' : ''" size="small">{{ row.status }}</el-tag>
-    </template>
-  </DataTable>
+  <div class="purchase-page">
+    <div class="purchase-filter-bar">
+      <div class="unsigned-reminder">
+        当前有 <span>{{ unsignedCount }}</span> 条未签收采购单！
+      </div>
+      <el-radio-group v-model="signFilter" size="small" @change="applySignFilter">
+        <el-radio-button label="all">全部</el-radio-button>
+        <el-radio-button label="signed">已签收</el-radio-button>
+        <el-radio-button label="unsigned">未签收</el-radio-button>
+      </el-radio-group>
+    </div>
+    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索采购单号..."
+      @add="openAdd" @edit="openEdit" @delete="handleDelete">
+      <template #signStatus="{ row }">
+        <span :class="['sign-status', row.signDate ? 'is-signed' : 'is-unsigned']">
+          {{ row.signDate ? '已签收' : '未签收' }}
+        </span>
+      </template>
+      <template #materialType="{ row }">
+        <el-tag :type="row.materialType === '纸板' ? '' : 'warning'" size="small">{{ row.materialType }}</el-tag>
+      </template>
+      <template #status="{ row }">
+        <el-tag :type="row.status === '已收货' ? 'success' : ''" size="small">{{ row.status }}</el-tag>
+      </template>
+    </DataTable>
+  </div>
   <FormDialog v-model="dialogVisible" :fields="fields" :isEdit="!!editId" :initialData="editData" :onSubmit="handleSubmit" :onChange="onFormChange" />
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
@@ -20,8 +37,10 @@ import { purchaseOrdersAPI, suppliersAPI } from '../../api/purchase'
 import { STITCH_OPTIONS, applyBoardCalculation } from '../../utils/boardCalculation'
 
 const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
+const signFilter = ref('all')
+const unsignedCount = ref(0)
 const columns = [
-  { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '采购单号' }, { key: 'createdDate', label: '建立日期' },
+  { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'orderDate', label: '下单日期' },
   { key: 'customerName', label: '客户' }, { key: 'supplierName', label: '供应商' }, { key: 'productName', label: '产品名称' }, { key: 'spec', label: '规格(cm)' },
   { key: 'material', label: '客户材质' }, { key: 'boxType', label: '盒式' }, { key: 'stitchType', label: '钉口' },
   { key: 'unitPrice', label: '客户平方单价' }, { key: 'qty', label: '下单数量' },
@@ -38,6 +57,7 @@ const columns = [
 const fields = [
   { key: 'unitPrice', label: '客户平方单价', type: 'display' },
   { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
+  { key: 'orderDate', label: '下单日期', type: 'date', required: true },
   { key: 'qty', label: '下单数量', type: 'display' },
   { key: 'spec', label: '规格(cm)', type: 'display' },
   { key: 'boxType', label: '盒式', type: 'display' },
@@ -76,7 +96,23 @@ function toApiData(f) {
   const { realBoardLength, realBoardWidth, referenceCrease, referenceBoardQty, ...data } = calcForm(f)
   return { ...data, supplier: f.supplierId ? { id: Number(f.supplierId) } : null }
 }
-function fetchData(p) { return purchaseOrdersAPI.list(p) }
+async function fetchData(p) {
+  const res = await purchaseOrdersAPI.list({ ...p, signStatus: signFilter.value })
+  if (Array.isArray(res.data?.data)) {
+    res.data.data = res.data.data.map(row => ({
+      ...row,
+      signStatus: row.signDate ? '已签收' : '未签收',
+    }))
+  }
+  return res
+}
+async function refreshUnsignedCount() {
+  const res = await purchaseOrdersAPI.list({ page: 1, perPage: 1, signStatus: 'unsigned' })
+  unsignedCount.value = res.data?.total || 0
+}
+function applySignFilter() {
+  tableRef.value?.doSearch()
+}
 function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
 function displayDiscountRate(rate) {
   const value = Number(rate)
@@ -89,10 +125,58 @@ function openEdit(row) {
 }
 async function handleDelete(row) {
   await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
-  await purchaseOrdersAPI.delete(row.id); tableRef.value.loadData()
+  await purchaseOrdersAPI.delete(row.id); await refreshUnsignedCount(); tableRef.value.loadData()
 }
 async function handleSubmit(form) {
   const data = toApiData(form)
-  editId.value ? await purchaseOrdersAPI.update(editId.value, data) : await purchaseOrdersAPI.create(data); tableRef.value.loadData()
+  editId.value ? await purchaseOrdersAPI.update(editId.value, data) : await purchaseOrdersAPI.create(data); await refreshUnsignedCount(); tableRef.value.loadData()
 }
+onMounted(refreshUnsignedCount)
 </script>
+
+<style scoped>
+.purchase-page {
+  display: grid;
+  gap: 12px;
+}
+
+.purchase-filter-bar {
+  align-items: center;
+  background: var(--erp-panel);
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+}
+
+.unsigned-reminder {
+  color: #334155;
+  font-weight: 800;
+}
+
+.unsigned-reminder span {
+  color: #dc2626;
+  font-size: 1.16rem;
+}
+
+.sign-status {
+  font-weight: 800;
+}
+
+.sign-status.is-signed {
+  color: #16a34a;
+}
+
+.sign-status.is-unsigned {
+  color: #dc2626;
+}
+
+@media (max-width: 720px) {
+  .purchase-filter-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+</style>

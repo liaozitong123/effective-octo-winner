@@ -2,6 +2,10 @@
   <div>
     <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索订单号/产品名..."
       @add="openAdd" @edit="openEdit" @delete="handleDelete">
+      <template #notes="{ row }">
+        <img v-if="isImageNote(row.notes)" :src="row.notes" class="note-thumb" alt="备注图片" />
+        <span v-else class="note-text">{{ row.notes || '-' }}</span>
+      </template>
       <template #status="{ row }">
         <el-tag :type="row.status === '已完成' ? 'success' : row.status === '生产中' ? 'warning' : ''" size="small">{{ row.status }}</el-tag>
       </template>
@@ -23,12 +27,12 @@ const editId = ref(null)
 const editData = ref({})
 
 const columns = [
-  { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '建立日期' },
+  { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '下单日期' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
   { key: 'spec', label: '规格(cm)' }, { key: 'material', label: '客户材质' },
   { key: 'boxType', label: '盒式' }, { key: 'fluteType', label: '楞别' }, { key: 'singleArea', label: '单个面积' }, { key: 'qty', label: '下单数量' },
   { key: 'unitPrice', label: '客户平方单价' }, { key: 'boxUnitPrice', label: '纸箱单价' },
-  { key: 'totalAmount', label: '总金额' },
+  { key: 'totalAmount', label: '总金额' }, { key: 'notes', label: '备注', slot: 'notes', minWidth: 150 },
 ]
 
 const fields = [
@@ -44,8 +48,12 @@ const fields = [
   { key: 'qty', label: '下单数量', type: 'number', required: true },
   { key: 'boxUnitPrice', label: '纸箱单价(元)', type: 'number', hintKey: 'referenceBoxUnitPrice', hintLabel: '参考单价' },
   { key: 'totalAmount', label: '总金额(元)', type: 'display' },
-  { key: 'notes', label: '备注', type: 'textarea' },
+  { key: 'notes', label: '备注', type: 'image-note' },
 ]
+
+function isImageNote(value) {
+  return typeof value === 'string' && value.startsWith('data:image/')
+}
 
 function calcForm(data) {
   // Auto-calculate singleArea from boxType and spec
@@ -97,3 +105,23 @@ async function handleSubmit(form) {
   tableRef.value.loadData()
 }
 </script>
+
+<style scoped>
+.note-thumb {
+  width: 54px;
+  height: 38px;
+  object-fit: cover;
+  border: 1px solid var(--erp-border);
+  border-radius: 6px;
+  display: block;
+}
+
+.note-text {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+</style>

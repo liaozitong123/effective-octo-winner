@@ -70,6 +70,7 @@ public class SalesOrderController {
         puo.setQty(saved.getQty());
         puo.setUnit(saved.getUnit());
         puo.setUnitPrice(saved.getUnitPrice());
+        puo.setOrderDate(toCreatedDate(saved.getCreatedAt()));
         puo.setMaterialType("纸板");
         puo.setMaterialName(saved.getProductName());
         if (saved.getCustomer() != null) puo.setCustomer(saved.getCustomer());
