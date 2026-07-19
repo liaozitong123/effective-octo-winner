@@ -1,6 +1,8 @@
 package com.cartonerp.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -13,12 +15,15 @@ public class PurchaseOrder {
     private String orderNo;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "supplier_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     private Supplier supplier;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     private Customer customer;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sales_order_id")
+    @NotFound(action = NotFoundAction.IGNORE)
     private SalesOrder salesOrder;
     @Column(nullable = false, length = 60)
     private String materialType;
