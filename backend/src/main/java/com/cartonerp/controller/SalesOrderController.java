@@ -67,15 +67,7 @@ public class SalesOrderController {
         // Auto-create purchase order
         PurchaseOrder puo = new PurchaseOrder();
         puo.setOrderNo(OrderNumberUtil.next("PO"));
-        puo.setSalesOrder(saved);
-        puo.setProductName(saved.getProductName());
-        puo.setSpec(saved.getSpec());
-        puo.setMaterial(saved.getMaterial());
-        puo.setBoxType(saved.getBoxType());
-        puo.setFluteType(saved.getFluteType());
-        puo.setQty(saved.getQty());
-        puo.setUnit(saved.getUnit());
-        puo.setUnitPrice(saved.getUnitPrice());
+        copySalesFieldsToPurchase(saved, puo);
         puo.setOrderDate(toCreatedDate(saved.getCreatedAt()));
         puo.setMaterialType("纸板");
         puo.setMaterialName(saved.getProductName());
@@ -120,13 +112,25 @@ public class SalesOrderController {
         if (linkedOrders.isEmpty()) linkedOrders = findLegacyPurchaseOrders(updated);
 
         for (PurchaseOrder purchaseOrder : linkedOrders) {
-            purchaseOrder.setSalesOrder(updated);
-            purchaseOrder.setQty(updated.getQty());
-            purchaseOrder.setUnitPrice(updated.getUnitPrice());
-            if (updated.getUnit() != null) purchaseOrder.setUnit(updated.getUnit());
+            copySalesFieldsToPurchase(updated, purchaseOrder);
+            if (purchaseOrder.getOrderDate() == null) purchaseOrder.setOrderDate(toCreatedDate(updated.getCreatedAt()));
             PurchaseOrder savedPurchase = purchaseOrderRepo.save(purchaseOrder);
             productionOrderService.createOrUpdateFromSignedPurchase(savedPurchase);
         }
+    }
+
+    private void copySalesFieldsToPurchase(SalesOrder source, PurchaseOrder target) {
+        target.setSalesOrder(source);
+        target.setCustomer(source.getCustomer());
+        target.setProductName(source.getProductName());
+        target.setMaterialName(source.getProductName());
+        target.setSpec(source.getSpec());
+        target.setMaterial(source.getMaterial());
+        target.setBoxType(source.getBoxType());
+        target.setFluteType(source.getFluteType());
+        target.setQty(source.getQty());
+        target.setUnit(source.getUnit());
+        target.setUnitPrice(source.getUnitPrice());
     }
 
     private List<PurchaseOrder> findLegacyPurchaseOrders(SalesOrder salesOrder) {

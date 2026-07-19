@@ -47,14 +47,14 @@ public class PurchaseOrderController {
         listParams.add(Math.max(page - 1, 0) * Math.max(perPage, 1));
         List<Map<String, Object>> rows = jdbcTemplate.query(
             "select po.id, po.order_no, po.sales_order_id, so.order_no as sales_order_no, "
-                + "cast(po.order_date as char) as order_date, s.name as supplier_name, po.supplier_id, c.name as customer_name, "
+                + "po.order_date as order_date, s.name as supplier_name, po.supplier_id, c.name as customer_name, "
                 + "po.customer_id, po.material_type, po.material_name, po.spec, po.qty, po.unit, "
-                + "po.unit_price, po.total_amount, po.status, cast(po.expected_date as char) as expected_date, po.notes, "
-                + "cast(po.created_at as char) as created_at, po.product_name, po.material, po.box_type, po.stitch_type, "
+                + "po.unit_price, po.total_amount, po.status, po.expected_date as expected_date, po.notes, "
+                + "po.created_at as created_at, po.product_name, po.material, po.box_type, po.stitch_type, "
                 + "po.production_material, po.flute_type, po.board_length, po.board_width, "
                 + "po.board_qty, po.cut_count, po.crease, po.board_area, po.total_area, "
                 + "po.material_base_price, po.discount_rate, po.board_unit_price, po.profit_rate, "
-                + "po.board_amount, cast(po.sign_date as char) as sign_date, po.actual_qty, po.actual_amount "
+                + "po.board_amount, po.sign_date as sign_date, po.actual_qty, po.actual_amount "
                 + "from purchase_orders po "
                 + "left join sales_orders so on po.sales_order_id = so.id "
                 + "left join suppliers s on po.supplier_id = s.id "
