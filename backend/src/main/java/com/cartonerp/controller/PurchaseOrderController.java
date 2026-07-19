@@ -36,6 +36,7 @@ public class PurchaseOrderController {
         Long total = jdbcTemplate.queryForObject(
             "select count(*) from purchase_orders po "
                 + "left join sales_orders so on po.sales_order_id = so.id "
+                + "left join customers c on po.customer_id = c.id "
                 + where,
             Long.class,
             params.toArray()
@@ -64,6 +65,25 @@ public class PurchaseOrderController {
             listParams.toArray()
         );
         return Result.okWithTotal(rows, total != null ? total : 0);
+    }
+
+    @GetMapping("/sign-summary")
+    public Result<Map<String, Object>> signSummary() {
+        Map<String, Object> summary = jdbcTemplate.queryForObject(
+            "select "
+                + "coalesce(sum(case when sign_date is null then 1 else 0 end), 0) as unsigned_count, "
+                + "coalesce(sum(case when sign_date is null then coalesce(total_area, 0) else 0 end), 0) as unsigned_total_area, "
+                + "coalesce(sum(case when sign_date is not null then coalesce(total_area, 0) else 0 end), 0) as signed_total_area "
+                + "from purchase_orders",
+            (rs, rowNum) -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("unsignedCount", numberValue(rs, "unsigned_count"));
+                m.put("unsignedTotalArea", numberValue(rs, "unsigned_total_area"));
+                m.put("signedTotalArea", numberValue(rs, "signed_total_area"));
+                return m;
+            }
+        );
+        return Result.ok(summary);
     }
 
     @GetMapping("/{id}")
@@ -174,7 +194,8 @@ public class PurchaseOrderController {
         List<String> clauses = new ArrayList<>();
         if (q != null && !q.isBlank()) {
             String p = "%" + q.trim() + "%";
-            clauses.add("(po.order_no like ? or po.material_name like ? or po.product_name like ? or so.order_no like ?)");
+            clauses.add("(po.order_no like ? or po.material_name like ? or po.product_name like ? or so.order_no like ? or c.name like ?)");
+            params.add(p);
             params.add(p);
             params.add(p);
             params.add(p);

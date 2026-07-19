@@ -1,6 +1,6 @@
 <template>
   <div>
-    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索订单号/产品名..."
+    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索订单号/客户/产品名..."
       @add="openAdd" @edit="openEdit" @delete="handleDelete">
       <template #notes="{ row }">
         <img v-if="isImageNote(row.notes)" :src="row.notes" class="note-thumb" alt="备注图片" />

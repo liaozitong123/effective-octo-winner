@@ -10,6 +10,7 @@ import com.cartonerp.repository.ProductionOrderRepository;
 import com.cartonerp.repository.PurchaseOrderRepository;
 import com.cartonerp.repository.SalesOrderRepository;
 import com.cartonerp.util.OrderNumberUtil;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -37,7 +38,11 @@ public class SalesOrderController {
         Specification<SalesOrder> spec = (root, query, cb) -> {
             if (q.isEmpty()) return null;
             String p = "%" + q + "%";
-            return cb.or(cb.like(root.get("orderNo"), p), cb.like(root.get("productName"), p));
+            return cb.or(
+                cb.like(root.get("orderNo"), p),
+                cb.like(root.get("productName"), p),
+                cb.like(root.join("customer", JoinType.LEFT).get("name"), p)
+            );
         };
         Page<SalesOrder> pg = repo.findAll(spec, PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "id")));
         List<Map<String, Object>> list = pg.getContent().stream().map(this::toMap).toList();

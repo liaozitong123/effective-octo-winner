@@ -10,6 +10,7 @@ export const suppliersAPI = {
 
 export const purchaseOrdersAPI = {
   list(params) { return request.get('/purchase-orders', { params }) },
+  signSummary() { return request.get('/purchase-orders/sign-summary') },
   create(data) { return request.post('/purchase-orders', data) },
   update(id, data) { return request.put(`/purchase-orders/${id}`, data) },
   delete(id) { return request.delete(`/purchase-orders/${id}`) },

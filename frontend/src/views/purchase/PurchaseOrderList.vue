@@ -2,7 +2,9 @@
   <div class="purchase-page">
     <div class="purchase-filter-bar">
       <div class="unsigned-reminder">
-        当前有 <span>{{ unsignedCount }}</span> 条未签收采购单！
+        当前有 <span class="danger-number">{{ unsignedCount }}</span> 条未签收采购单！
+        当前未签收总面积 <span class="danger-number">{{ formatArea(unsignedTotalArea) }}</span>，
+        已签收总面积 <span class="success-number">{{ formatArea(signedTotalArea) }}</span>。
       </div>
       <el-radio-group v-model="signFilter" size="small" @change="applySignFilter">
         <el-radio-button label="all">全部</el-radio-button>
@@ -10,7 +12,7 @@
         <el-radio-button label="unsigned">未签收</el-radio-button>
       </el-radio-group>
     </div>
-    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索采购单号..."
+    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索采购单号/客户/产品名..."
       @add="openAdd" @edit="openEdit" @delete="handleDelete">
       <template #signStatus="{ row }">
         <span :class="['sign-status', row.signDate ? 'is-signed' : 'is-unsigned']">
@@ -39,6 +41,8 @@ import { STITCH_OPTIONS, applyBoardCalculation } from '../../utils/boardCalculat
 const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
 const signFilter = ref('all')
 const unsignedCount = ref(0)
+const unsignedTotalArea = ref(0)
+const signedTotalArea = ref(0)
 const columns = [
   { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'salesOrderNo', label: '销售订单号' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
@@ -108,9 +112,16 @@ async function fetchData(p) {
   }
   return res
 }
-async function refreshUnsignedCount() {
-  const res = await purchaseOrdersAPI.list({ page: 1, perPage: 1, signStatus: 'unsigned' })
-  unsignedCount.value = res.data?.total || 0
+function formatArea(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+}
+async function refreshSignSummary() {
+  const res = await purchaseOrdersAPI.signSummary()
+  const summary = res.data?.data || {}
+  unsignedCount.value = Number(summary.unsignedCount) || 0
+  unsignedTotalArea.value = Number(summary.unsignedTotalArea) || 0
+  signedTotalArea.value = Number(summary.signedTotalArea) || 0
 }
 function applySignFilter() {
   tableRef.value?.doSearch()
@@ -127,13 +138,13 @@ function openEdit(row) {
 }
 async function handleDelete(row) {
   await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
-  await purchaseOrdersAPI.delete(row.id); await refreshUnsignedCount(); tableRef.value.loadData()
+  await purchaseOrdersAPI.delete(row.id); await refreshSignSummary(); tableRef.value.loadData()
 }
 async function handleSubmit(form) {
   const data = toApiData(form)
-  editId.value ? await purchaseOrdersAPI.update(editId.value, data) : await purchaseOrdersAPI.create(data); await refreshUnsignedCount(); tableRef.value.loadData()
+  editId.value ? await purchaseOrdersAPI.update(editId.value, data) : await purchaseOrdersAPI.create(data); await refreshSignSummary(); tableRef.value.loadData()
 }
-onMounted(refreshUnsignedCount)
+onMounted(refreshSignSummary)
 </script>
 
 <style scoped>
@@ -158,8 +169,13 @@ onMounted(refreshUnsignedCount)
   font-weight: 800;
 }
 
-.unsigned-reminder span {
+.unsigned-reminder .danger-number {
   color: #dc2626;
+  font-size: 1.16rem;
+}
+
+.unsigned-reminder .success-number {
+  color: #16a34a;
   font-size: 1.16rem;
 }
 
