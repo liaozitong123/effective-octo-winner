@@ -1,6 +1,8 @@
 package com.cartonerp.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -14,6 +16,10 @@ public class ProductionOrder {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sales_order_id")
     private SalesOrder salesOrder;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "purchase_order_id")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private PurchaseOrder purchaseOrder;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id")
     private Customer customer;
@@ -55,6 +61,7 @@ public class ProductionOrder {
     private LocalDate startDate;
     private LocalDate finishDate;
     @Column(length = 60) private String workshop;
+    @Column(name = "production_operator", length = 60) private String operator;
     @Column(columnDefinition = "TEXT") private String notes;
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -62,6 +69,7 @@ public class ProductionOrder {
     public Long getId() { return id; }
     public String getOrderNo() { return orderNo; }
     public SalesOrder getSalesOrder() { return salesOrder; }
+    public PurchaseOrder getPurchaseOrder() { return purchaseOrder; }
     public Customer getCustomer() { return customer; }
     public String getProductName() { return productName; }
     public String getSpec() { return spec; }
@@ -74,11 +82,13 @@ public class ProductionOrder {
     public LocalDate getStartDate() { return startDate; }
     public LocalDate getFinishDate() { return finishDate; }
     public String getWorkshop() { return workshop; }
+    public String getOperator() { return operator; }
     public String getNotes() { return notes; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setId(Long id) { this.id = id; }
     public void setOrderNo(String o) { this.orderNo = o; }
     public void setSalesOrder(SalesOrder s) { this.salesOrder = s; }
+    public void setPurchaseOrder(PurchaseOrder p) { this.purchaseOrder = p; }
     public void setCustomer(Customer c) { this.customer = c; }
     public void setProductName(String p) { this.productName = p; }
     public void setSpec(String s) { this.spec = s; }
@@ -93,6 +103,7 @@ public class ProductionOrder {
     public void setStartDate(LocalDate d) { this.startDate = d; }
     public void setFinishDate(LocalDate d) { this.finishDate = d; }
     public void setWorkshop(String w) { this.workshop = w; }
+    public void setOperator(String o) { this.operator = o; }
     public void setNotes(String n) { this.notes = n; }
     public void setCreatedAt(LocalDateTime c) { this.createdAt = c; }
     // New production fields

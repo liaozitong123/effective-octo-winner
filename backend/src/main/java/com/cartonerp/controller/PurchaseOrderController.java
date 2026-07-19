@@ -1,9 +1,9 @@
 package com.cartonerp.controller;
 
 import com.cartonerp.common.Result;
-import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.repository.*;
+import com.cartonerp.service.ProductionOrderService;
 import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.JoinType;
@@ -22,8 +22,8 @@ import java.util.*;
 public class PurchaseOrderController {
     @Autowired private PurchaseOrderRepository repo;
     @Autowired private SupplierRepository supplierRepo;
-    @Autowired private ProductionOrderRepository productionOrderRepo;
     @Autowired private com.cartonerp.service.BusinessService businessService;
+    @Autowired private ProductionOrderService productionOrderService;
     @Autowired private JdbcTemplate jdbcTemplate;
 
     @GetMapping
@@ -100,37 +100,7 @@ public class PurchaseOrderController {
         applyBoardCalculation(o);
         PurchaseOrder saved = repo.save(o);
         businessService.onPurchaseReceived(saved);
-
-        // Auto-create production order
-        ProductionOrder po = new ProductionOrder();
-        po.setOrderNo(OrderNumberUtil.next("PRD"));
-        po.setProductName(saved.getProductName() != null ? saved.getProductName() : saved.getMaterialName());
-        po.setSpec(saved.getSpec());
-        po.setMaterial(saved.getMaterial());
-        po.setBoxType(saved.getBoxType());
-        po.setStitchType(saved.getStitchType());
-        po.setSupplier(saved.getSupplier());
-        po.setQty(saved.getQty());
-        po.setUnit(saved.getUnit() != null ? saved.getUnit() : "个");
-        po.setProductionMaterial(saved.getProductionMaterial());
-        po.setFluteType(saved.getFluteType());
-        po.setBoardLength(saved.getBoardLength());
-        po.setBoardWidth(saved.getBoardWidth());
-        po.setBoardQty(saved.getBoardQty());
-        po.setCutCount(saved.getCutCount());
-        po.setCrease(saved.getCrease());
-        po.setBoardArea(saved.getBoardArea());
-        po.setTotalArea(saved.getTotalArea());
-        po.setMaterialBasePrice(saved.getMaterialBasePrice());
-        po.setDiscountRate(saved.getDiscountRate());
-        po.setBoardUnitPrice(saved.getBoardUnitPrice());
-        po.setProfitRate(saved.getProfitRate());
-        po.setBoardAmount(saved.getBoardAmount());
-        po.setSignDate(saved.getSignDate());
-        po.setActualQty(saved.getActualQty());
-        po.setActualAmount(saved.getActualAmount());
-        po.setStatus("待排产");
-        productionOrderRepo.save(po);
+        productionOrderService.createOrUpdateFromSignedPurchase(saved);
 
         return Result.ok(toMap(saved), "创建成功");
     }
@@ -177,13 +147,7 @@ public class PurchaseOrderController {
         applyBoardCalculation(ex);
         PurchaseOrder saved = repo.save(ex);
         businessService.onPurchaseReceived(saved);
-
-        // Sync supplier to linked production orders
-        if (saved.getSupplier() != null) {
-            productionOrderRepo.findAll().stream()
-                .filter(po -> po.getOrderNo() != null && po.getOrderNo().equals(saved.getOrderNo()))
-                .forEach(po -> { po.setSupplier(saved.getSupplier()); productionOrderRepo.save(po); });
-        }
+        productionOrderService.createOrUpdateFromSignedPurchase(saved);
 
         return Result.ok(toMap(saved), "更新成功");
     }

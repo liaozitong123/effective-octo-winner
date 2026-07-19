@@ -1,7 +1,6 @@
 package com.cartonerp.controller;
 
 import com.cartonerp.common.Result;
-import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.CustomerRepository;
@@ -9,6 +8,7 @@ import com.cartonerp.repository.DeliveryNoteRepository;
 import com.cartonerp.repository.ProductionOrderRepository;
 import com.cartonerp.repository.PurchaseOrderRepository;
 import com.cartonerp.repository.SalesOrderRepository;
+import com.cartonerp.service.ProductionOrderService;
 import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -30,6 +30,7 @@ public class SalesOrderController {
     @Autowired private ProductionOrderRepository productionOrderRepo;
     @Autowired private DeliveryNoteRepository deliveryNoteRepo;
     @Autowired private PurchaseOrderRepository purchaseOrderRepo;
+    @Autowired private ProductionOrderService productionOrderService;
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
@@ -80,30 +81,7 @@ public class SalesOrderController {
         puo.setMaterialName(saved.getProductName());
         if (saved.getCustomer() != null) puo.setCustomer(saved.getCustomer());
         puo.setStatus("待收货");
-        PurchaseOrder savedPuo = purchaseOrderRepo.save(puo);
-
-        // Auto-create production order from purchase order
-        ProductionOrder po = new ProductionOrder();
-        po.setOrderNo(OrderNumberUtil.next("PRD"));
-        po.setSalesOrder(saved);
-        po.setProductName(savedPuo.getProductName());
-        po.setSpec(savedPuo.getSpec());
-        po.setMaterial(savedPuo.getMaterial());
-        po.setBoxType(savedPuo.getBoxType());
-        po.setCustomer(saved.getCustomer());
-        po.setSupplier(savedPuo.getSupplier());
-        po.setQty(savedPuo.getQty());
-        po.setUnit(savedPuo.getUnit() != null ? savedPuo.getUnit() : "个");
-        po.setProductionMaterial(savedPuo.getProductionMaterial());
-        po.setFluteType(savedPuo.getFluteType());
-        po.setUnitPrice(savedPuo.getUnitPrice());
-        po.setBoardLength(savedPuo.getBoardLength());
-        po.setBoardWidth(savedPuo.getBoardWidth());
-        po.setBoardQty(savedPuo.getBoardQty());
-        po.setCutCount(savedPuo.getCutCount());
-        po.setCrease(savedPuo.getCrease());
-        po.setStatus("待排产");
-        productionOrderRepo.save(po);
+        purchaseOrderRepo.save(puo);
 
         return Result.ok(toMap(saved), "创建成功");
     }
@@ -134,20 +112,6 @@ public class SalesOrderController {
 
         syncLinkedPurchaseOrders(updated);
 
-        // Sync linked production orders
-        productionOrderRepo.findAll().stream()
-            .filter(po -> po.getSalesOrder() != null && po.getSalesOrder().getId().equals(id))
-            .forEach(po -> {
-                po.setProductName(updated.getProductName());
-                po.setSpec(updated.getSpec());
-                po.setMaterial(updated.getMaterial());
-                po.setBoxType(updated.getBoxType());
-                po.setFluteType(updated.getFluteType());
-                po.setUnitPrice(updated.getUnitPrice());
-                po.setQty(updated.getQty());
-                productionOrderRepo.save(po);
-            });
-
         return Result.ok(toMap(updated), "更新成功");
     }
 
@@ -160,7 +124,8 @@ public class SalesOrderController {
             purchaseOrder.setQty(updated.getQty());
             purchaseOrder.setUnitPrice(updated.getUnitPrice());
             if (updated.getUnit() != null) purchaseOrder.setUnit(updated.getUnit());
-            purchaseOrderRepo.save(purchaseOrder);
+            PurchaseOrder savedPurchase = purchaseOrderRepo.save(purchaseOrder);
+            productionOrderService.createOrUpdateFromSignedPurchase(savedPurchase);
         }
     }
 
