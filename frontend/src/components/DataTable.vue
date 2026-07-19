@@ -11,7 +11,7 @@
     </div>
 
     <div class="table-card">
-      <el-table :data="tableData" border style="width:100%" v-loading="loading" class="desktop-table">
+      <el-table :data="tableData" border style="width:100%" v-loading="loading" class="desktop-table" :max-height="tableMaxHeight">
         <el-table-column
           v-for="col in columns"
           :key="col.key"
@@ -80,6 +80,7 @@ const props = defineProps({
   searchFields: Array,
   showPrint: { type: Boolean, default: false },
   hideAdd: { type: Boolean, default: false },
+  tableMaxHeight: { type: [String, Number], default: 'calc(100vh - 232px)' },
 })
 
 const emit = defineEmits(['add', 'edit', 'delete', 'print'])

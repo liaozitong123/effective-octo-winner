@@ -13,6 +13,7 @@
       </el-radio-group>
     </div>
     <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索采购单号/客户/产品名..."
+      table-max-height="calc(100vh - 294px)"
       @add="openAdd" @edit="openEdit" @delete="handleDelete">
       <template #signStatus="{ row }">
         <span :class="['sign-status', row.signDate ? 'is-signed' : 'is-unsigned']">
