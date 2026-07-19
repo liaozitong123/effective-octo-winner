@@ -42,10 +42,10 @@ const unsignedCount = ref(0)
 const columns = [
   { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'salesOrderNo', label: '销售订单号' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
-  { key: 'supplierName', label: '供应商' }, { key: 'orderDate', label: '下单日期' }, { key: 'spec', label: '规格(cm)' },
+  { key: 'supplierName', label: '供应商' }, { key: 'orderDate', label: '下单日期' }, { key: 'spec', label: '规格(cm)', minWidth: 170 },
   { key: 'productionMaterial', label: '生产材质' }, { key: 'fluteType', label: '楞别' },
   { key: 'boardLength', label: '纸板长度' }, { key: 'boardWidth', label: '纸板宽度' },
-  { key: 'boardQty', label: '纸板数量' }, { key: 'cutCount', label: '开数' }, { key: 'crease', label: '凹压线' },
+  { key: 'boardQty', label: '纸板数量' }, { key: 'cutCount', label: '开数', width: 72, minWidth: 72 }, { key: 'crease', label: '凹压线', minWidth: 170 },
   { key: 'notes', label: '备注' },
   { key: 'material', label: '客户材质' }, { key: 'boxType', label: '盒式' }, { key: 'stitchType', label: '钉口' },
   { key: 'unitPrice', label: '客户平方单价' }, { key: 'qty', label: '下单数量' },
