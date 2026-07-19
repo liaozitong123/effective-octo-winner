@@ -40,7 +40,7 @@ const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), edit
 const signFilter = ref('all')
 const unsignedCount = ref(0)
 const columns = [
-  { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' },
+  { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'salesOrderNo', label: '销售订单号' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
   { key: 'supplierName', label: '供应商' }, { key: 'orderDate', label: '下单日期' }, { key: 'spec', label: '规格(cm)' },
   { key: 'productionMaterial', label: '生产材质' }, { key: 'fluteType', label: '楞别' },

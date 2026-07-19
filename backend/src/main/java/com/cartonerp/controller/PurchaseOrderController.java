@@ -6,6 +6,7 @@ import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.repository.*;
 import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -30,7 +31,12 @@ public class PurchaseOrderController {
             List<Predicate> predicates = new ArrayList<>();
             if (!q.isEmpty()) {
                 String p = "%" + q + "%";
-                predicates.add(cb.or(cb.like(root.get("orderNo"), p), cb.like(root.get("materialName"), p)));
+                predicates.add(cb.or(
+                    cb.like(root.get("orderNo"), p),
+                    cb.like(root.get("materialName"), p),
+                    cb.like(root.get("productName"), p),
+                    cb.like(root.join("salesOrder", JoinType.LEFT).get("orderNo"), p)
+                ));
             }
             if ("signed".equals(signStatus)) {
                 predicates.add(cb.isNotNull(root.get("signDate")));
@@ -150,6 +156,8 @@ public class PurchaseOrderController {
     private Map<String, Object> toMap(PurchaseOrder o) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", o.getId()); m.put("orderNo", o.getOrderNo());
+        m.put("salesOrderId", o.getSalesOrder() != null ? o.getSalesOrder().getId() : null);
+        m.put("salesOrderNo", o.getSalesOrder() != null ? o.getSalesOrder().getOrderNo() : "");
         m.put("orderDate", o.getOrderDate());
         m.put("supplierName", o.getSupplier() != null ? o.getSupplier().getName() : "");
         m.put("supplierId", o.getSupplier() != null ? o.getSupplier().getId() : null);
