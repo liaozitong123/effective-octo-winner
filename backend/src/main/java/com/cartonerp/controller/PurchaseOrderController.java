@@ -46,14 +46,14 @@ public class PurchaseOrderController {
         listParams.add(Math.max(page - 1, 0) * Math.max(perPage, 1));
         List<Map<String, Object>> rows = jdbcTemplate.query(
             "select po.id, po.order_no, po.sales_order_id, so.order_no as sales_order_no, "
-                + "po.order_date, s.name as supplier_name, po.supplier_id, c.name as customer_name, "
+                + "cast(po.order_date as char) as order_date, s.name as supplier_name, po.supplier_id, c.name as customer_name, "
                 + "po.customer_id, po.material_type, po.material_name, po.spec, po.qty, po.unit, "
-                + "po.unit_price, po.total_amount, po.status, po.expected_date, po.notes, "
-                + "po.created_at, po.product_name, po.material, po.box_type, po.stitch_type, "
+                + "po.unit_price, po.total_amount, po.status, cast(po.expected_date as char) as expected_date, po.notes, "
+                + "cast(po.created_at as char) as created_at, po.product_name, po.material, po.box_type, po.stitch_type, "
                 + "po.production_material, po.flute_type, po.board_length, po.board_width, "
                 + "po.board_qty, po.cut_count, po.crease, po.board_area, po.total_area, "
                 + "po.material_base_price, po.discount_rate, po.board_unit_price, po.profit_rate, "
-                + "po.board_amount, po.sign_date, po.actual_qty, po.actual_amount "
+                + "po.board_amount, cast(po.sign_date as char) as sign_date, po.actual_qty, po.actual_amount "
                 + "from purchase_orders po "
                 + "left join sales_orders so on po.sales_order_id = so.id "
                 + "left join suppliers s on po.supplier_id = s.id "
@@ -191,36 +191,36 @@ public class PurchaseOrderController {
     private Map<String, Object> toListMap(ResultSet rs) throws SQLException {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", numberValue(rs, "id"));
-        m.put("orderNo", rs.getString("order_no"));
+        m.put("orderNo", safeString(rs, "order_no"));
         m.put("salesOrderId", numberValue(rs, "sales_order_id"));
         m.put("salesOrderNo", safeString(rs, "sales_order_no"));
-        m.put("orderDate", rs.getString("order_date"));
+        m.put("orderDate", safeString(rs, "order_date"));
         m.put("supplierName", safeString(rs, "supplier_name"));
         m.put("supplierId", numberValue(rs, "supplier_id"));
         m.put("customerName", safeString(rs, "customer_name"));
         m.put("customerId", numberValue(rs, "customer_id"));
-        m.put("materialType", rs.getString("material_type"));
-        m.put("materialName", rs.getString("material_name"));
-        m.put("spec", rs.getString("spec"));
+        m.put("materialType", safeString(rs, "material_type"));
+        m.put("materialName", safeString(rs, "material_name"));
+        m.put("spec", safeString(rs, "spec"));
         m.put("qty", numberValue(rs, "qty"));
-        m.put("unit", rs.getString("unit"));
+        m.put("unit", safeString(rs, "unit"));
         m.put("unitPrice", numberValue(rs, "unit_price"));
         m.put("totalAmount", numberValue(rs, "total_amount"));
-        m.put("status", rs.getString("status"));
-        m.put("expectedDate", rs.getString("expected_date"));
-        m.put("notes", rs.getString("notes"));
-        m.put("createdAt", rs.getString("created_at"));
-        m.put("productName", rs.getString("product_name"));
-        m.put("material", rs.getString("material"));
-        m.put("boxType", rs.getString("box_type"));
-        m.put("stitchType", rs.getString("stitch_type"));
-        m.put("productionMaterial", rs.getString("production_material"));
-        m.put("fluteType", rs.getString("flute_type"));
+        m.put("status", safeString(rs, "status"));
+        m.put("expectedDate", safeString(rs, "expected_date"));
+        m.put("notes", safeString(rs, "notes"));
+        m.put("createdAt", safeString(rs, "created_at"));
+        m.put("productName", safeString(rs, "product_name"));
+        m.put("material", safeString(rs, "material"));
+        m.put("boxType", safeString(rs, "box_type"));
+        m.put("stitchType", safeString(rs, "stitch_type"));
+        m.put("productionMaterial", safeString(rs, "production_material"));
+        m.put("fluteType", safeString(rs, "flute_type"));
         m.put("boardLength", numberValue(rs, "board_length"));
         m.put("boardWidth", numberValue(rs, "board_width"));
         m.put("boardQty", numberValue(rs, "board_qty"));
         m.put("cutCount", numberValue(rs, "cut_count"));
-        m.put("crease", rs.getString("crease"));
+        m.put("crease", safeString(rs, "crease"));
         m.put("boardArea", numberValue(rs, "board_area"));
         m.put("totalArea", numberValue(rs, "total_area"));
         m.put("materialBasePrice", numberValue(rs, "material_base_price"));
@@ -228,23 +228,31 @@ public class PurchaseOrderController {
         m.put("boardUnitPrice", numberValue(rs, "board_unit_price"));
         m.put("profitRate", numberValue(rs, "profit_rate"));
         m.put("boardAmount", numberValue(rs, "board_amount"));
-        m.put("signDate", rs.getString("sign_date"));
+        m.put("signDate", safeString(rs, "sign_date"));
         m.put("actualQty", numberValue(rs, "actual_qty"));
         m.put("actualAmount", numberValue(rs, "actual_amount"));
         return m;
     }
 
-    private String safeString(ResultSet rs, String column) throws SQLException {
-        String value = rs.getString(column);
-        return value != null ? value : "";
+    private String safeString(ResultSet rs, String column) {
+        try {
+            String value = rs.getString(column);
+            return value != null ? value : "";
+        } catch (SQLException e) {
+            return "";
+        }
     }
 
-    private Number numberValue(ResultSet rs, String column) throws SQLException {
-        Object value = rs.getObject(column);
-        return value instanceof Number number ? number : null;
+    private Number numberValue(ResultSet rs, String column) {
+        try {
+            Object value = rs.getObject(column);
+            return value instanceof Number number ? number : null;
+        } catch (SQLException e) {
+            return null;
+        }
     }
 
-    private Double doubleValue(ResultSet rs, String column) throws SQLException {
+    private Double doubleValue(ResultSet rs, String column) {
         Number value = numberValue(rs, column);
         return value != null ? value.doubleValue() : null;
     }
