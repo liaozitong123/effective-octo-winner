@@ -3,6 +3,7 @@ package com.cartonerp.controller;
 import com.cartonerp.common.Result;
 import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.PurchaseOrder;
+import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.*;
 import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDate;
 import java.util.*;
 
 @RestController
@@ -18,6 +20,7 @@ import java.util.*;
 public class PurchaseOrderController {
     @Autowired private PurchaseOrderRepository repo;
     @Autowired private SupplierRepository supplierRepo;
+    @Autowired private SalesOrderRepository salesOrderRepo;
     @Autowired private ProductionOrderRepository productionOrderRepo;
     @Autowired private com.cartonerp.service.BusinessService businessService;
 
@@ -50,10 +53,16 @@ public class PurchaseOrderController {
 
     @PostMapping
     public Result<Map<String, Object>> create(@RequestBody PurchaseOrder o) {
+        try {
+            applySalesOrderLink(o, true);
+        } catch (IllegalArgumentException e) {
+            return Result.fail(400, e.getMessage());
+        }
         if (o.getSupplier() != null && o.getSupplier().getId() != null)
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(o::setSupplier);
         // Auto-generate order number: PO-YYYYMMDDHHmmss
         o.setOrderNo(OrderNumberUtil.next("PO"));
+        fillOrderDateFromCreatedAt(o);
         applyBoardCalculation(o);
         PurchaseOrder saved = repo.save(o);
         businessService.onPurchaseReceived(saved);
@@ -61,6 +70,8 @@ public class PurchaseOrderController {
         // Auto-create production order
         ProductionOrder po = new ProductionOrder();
         po.setOrderNo(OrderNumberUtil.next("PRD"));
+        po.setSalesOrder(saved.getSalesOrder());
+        po.setCustomer(saved.getCustomer());
         po.setProductName(saved.getProductName() != null ? saved.getProductName() : saved.getMaterialName());
         po.setSpec(saved.getSpec());
         po.setMaterial(saved.getMaterial());
@@ -69,6 +80,7 @@ public class PurchaseOrderController {
         po.setSupplier(saved.getSupplier());
         po.setQty(saved.getQty());
         po.setUnit(saved.getUnit() != null ? saved.getUnit() : "个");
+        po.setUnitPrice(saved.getUnitPrice());
         po.setProductionMaterial(saved.getProductionMaterial());
         po.setFluteType(saved.getFluteType());
         po.setBoardLength(saved.getBoardLength());
@@ -97,6 +109,11 @@ public class PurchaseOrderController {
         PurchaseOrder ex = repo.findById(id).orElse(null);
         if (ex == null) return Result.fail(404, "不存在");
         if (o.getOrderNo() != null) ex.setOrderNo(o.getOrderNo());
+        try {
+            if (o.getSalesOrder() != null && o.getSalesOrder().getId() != null) applySalesOrderLink(ex, false, o.getSalesOrder().getId());
+        } catch (IllegalArgumentException e) {
+            return Result.fail(400, e.getMessage());
+        }
         if (o.getSupplier() != null && o.getSupplier().getId() != null)
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(ex::setSupplier);
         if (o.getMaterialType() != null) ex.setMaterialType(o.getMaterialType());
@@ -151,6 +168,8 @@ public class PurchaseOrderController {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", o.getId()); m.put("orderNo", o.getOrderNo());
         m.put("orderDate", o.getOrderDate());
+        m.put("salesOrderId", o.getSalesOrder() != null ? o.getSalesOrder().getId() : null);
+        m.put("salesOrderNo", o.getSalesOrder() != null ? o.getSalesOrder().getOrderNo() : "");
         m.put("supplierName", o.getSupplier() != null ? o.getSupplier().getName() : "");
         m.put("supplierId", o.getSupplier() != null ? o.getSupplier().getId() : null);
         m.put("customerName", o.getCustomer() != null ? o.getCustomer().getName() : "");
@@ -189,6 +208,40 @@ public class PurchaseOrderController {
 
     private Double displayDiscountRate(Double rate) {
         return rate != null && rate > 0 && rate <= 2 ? rate * 100 : rate;
+    }
+
+    private void applySalesOrderLink(PurchaseOrder purchaseOrder, boolean required) {
+        Long salesOrderId = purchaseOrder.getSalesOrder() != null ? purchaseOrder.getSalesOrder().getId() : null;
+        applySalesOrderLink(purchaseOrder, required, salesOrderId);
+    }
+
+    private void applySalesOrderLink(PurchaseOrder purchaseOrder, boolean required, Long salesOrderId) {
+        if (salesOrderId == null) {
+            if (required) throw new IllegalArgumentException("请选择销售订单单号");
+            return;
+        }
+        SalesOrder salesOrder = salesOrderRepo.findById(salesOrderId)
+            .orElseThrow(() -> new IllegalArgumentException("销售订单不存在"));
+        purchaseOrder.setSalesOrder(salesOrder);
+        purchaseOrder.setCustomer(salesOrder.getCustomer());
+        purchaseOrder.setProductName(salesOrder.getProductName());
+        purchaseOrder.setSpec(salesOrder.getSpec());
+        purchaseOrder.setMaterial(salesOrder.getMaterial());
+        purchaseOrder.setBoxType(salesOrder.getBoxType());
+        purchaseOrder.setFluteType(salesOrder.getFluteType());
+        purchaseOrder.setQty(salesOrder.getQty());
+        purchaseOrder.setUnit(salesOrder.getUnit());
+        purchaseOrder.setUnitPrice(salesOrder.getUnitPrice());
+        purchaseOrder.setMaterialType("纸板");
+        purchaseOrder.setMaterialName(salesOrder.getProductName());
+    }
+
+    private void fillOrderDateFromCreatedAt(PurchaseOrder purchaseOrder) {
+        if (purchaseOrder.getOrderDate() == null) {
+            purchaseOrder.setOrderDate(
+                purchaseOrder.getCreatedAt() != null ? purchaseOrder.getCreatedAt().toLocalDate() : LocalDate.now()
+            );
+        }
     }
 
 }

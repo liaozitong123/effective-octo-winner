@@ -34,19 +34,23 @@ import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
 import { purchaseOrdersAPI, suppliersAPI } from '../../api/purchase'
+import { salesOrdersAPI } from '../../api/sales'
 import { STITCH_OPTIONS, applyBoardCalculation } from '../../utils/boardCalculation'
 
 const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
 const signFilter = ref('all')
 const unsignedCount = ref(0)
+const salesOrderLookup = ref(new Map())
 const columns = [
-  { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'orderDate', label: '下单日期' },
-  { key: 'customerName', label: '客户' }, { key: 'supplierName', label: '供应商' }, { key: 'productName', label: '产品名称' }, { key: 'spec', label: '规格(cm)' },
-  { key: 'material', label: '客户材质' }, { key: 'boxType', label: '盒式' }, { key: 'stitchType', label: '钉口' },
-  { key: 'unitPrice', label: '客户平方单价' }, { key: 'qty', label: '下单数量' },
+  { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' },
+  { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
+  { key: 'supplierName', label: '供应商' }, { key: 'orderDate', label: '下单日期' }, { key: 'spec', label: '规格(cm)' },
   { key: 'productionMaterial', label: '生产材质' }, { key: 'fluteType', label: '楞别' },
   { key: 'boardLength', label: '纸板长度' }, { key: 'boardWidth', label: '纸板宽度' },
-  { key: 'boardQty', label: '纸板数量' }, { key: 'cutCount', label: '开数' },
+  { key: 'boardQty', label: '纸板数量' }, { key: 'cutCount', label: '开数' }, { key: 'crease', label: '凹压线' },
+  { key: 'notes', label: '备注' },
+  { key: 'material', label: '客户材质' }, { key: 'boxType', label: '盒式' }, { key: 'stitchType', label: '钉口' },
+  { key: 'unitPrice', label: '客户平方单价' }, { key: 'qty', label: '下单数量' },
   { key: 'boardArea', label: '纸板面积' }, { key: 'totalArea', label: '总面积' },
   { key: 'materialBasePrice', label: '材质基价' }, { key: 'discountRate', label: '折率(%)' },
   { key: 'boardUnitPrice', label: '纸板平方单价' }, { key: 'profitRate', label: '毛利率(%)' },
@@ -55,12 +59,17 @@ const columns = [
   { key: 'actualAmount', label: '实收金额' },
 ]
 const fields = [
+  { key: 'salesOrderId', label: '销售订单单号', type: 'select', required: true, optionsApi: loadSalesOrderOptions, labelKey: 'orderNo' },
+  { key: 'customerName', label: '客户', type: 'display' },
+  { key: 'productName', label: '产品名称', type: 'display' },
   { key: 'unitPrice', label: '客户平方单价', type: 'display' },
   { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
-  { key: 'orderDate', label: '下单日期', type: 'date', required: true },
+  { key: 'orderDate', label: '下单日期', type: 'display' },
   { key: 'qty', label: '下单数量', type: 'display' },
   { key: 'spec', label: '规格(cm)', type: 'display' },
+  { key: 'material', label: '客户材质', type: 'display' },
   { key: 'boxType', label: '盒式', type: 'display' },
+  { key: 'fluteType', label: '楞别', type: 'display' },
   { key: 'stitchType', label: '钉口', type: 'select', options: STITCH_OPTIONS },
   { key: 'productionMaterial', label: '生产材质' },
   { key: 'cutCount', label: '开数', type: 'number' },
@@ -88,13 +97,51 @@ function shouldAutoBoardUnitPrice(data, changedKey) {
     || data.boardUnitPrice === undefined
     || (Number.isFinite(currentPrice) && currentPrice <= 0)
 }
+async function loadSalesOrderOptions() {
+  const res = await salesOrdersAPI.list({ page: 1, perPage: 200 })
+  const orders = res.data?.data || []
+  salesOrderLookup.value = new Map(orders.map(order => [Number(order.id), order]))
+  return orders
+}
+function todayYmd() {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+function purchaseDataFromSalesOrder(order, currentData = {}) {
+  return {
+    customerName: order.customerName || '',
+    productName: order.productName || '',
+    materialType: '纸板',
+    materialName: order.productName || '',
+    spec: order.spec || '',
+    material: order.material || '',
+    boxType: order.boxType || '',
+    fluteType: order.fluteType || '',
+    qty: order.qty ?? 0,
+    unit: order.unit || '个',
+    unitPrice: order.unitPrice ?? 0,
+    orderDate: currentData.orderDate || todayYmd(),
+    status: currentData.status || '待收货',
+  }
+}
 function calcForm(data, changedKey) {
-  return applyBoardCalculation(data, { autoBoardUnitPrice: shouldAutoBoardUnitPrice(data, changedKey) })
+  let next = { ...data }
+  if (changedKey === 'salesOrderId') {
+    const salesOrder = salesOrderLookup.value.get(Number(data.salesOrderId))
+    if (salesOrder) next = { ...next, ...purchaseDataFromSalesOrder(salesOrder, data) }
+  }
+  return applyBoardCalculation(next, { autoBoardUnitPrice: shouldAutoBoardUnitPrice(next, changedKey) })
 }
 function onFormChange(data, changedKey) { return calcForm(data, changedKey) }
 function toApiData(f) {
-  const { realBoardLength, realBoardWidth, referenceCrease, referenceBoardQty, ...data } = calcForm(f)
-  return { ...data, supplier: f.supplierId ? { id: Number(f.supplierId) } : null }
+  const { realBoardLength, realBoardWidth, referenceCrease, referenceBoardQty, salesOrderId, ...data } = calcForm(f)
+  return {
+    ...data,
+    salesOrder: salesOrderId ? { id: Number(salesOrderId) } : null,
+    supplier: f.supplierId ? { id: Number(f.supplierId) } : null,
+  }
 }
 async function fetchData(p) {
   const res = await purchaseOrdersAPI.list({ ...p, signStatus: signFilter.value })
@@ -113,14 +160,14 @@ async function refreshUnsignedCount() {
 function applySignFilter() {
   tableRef.value?.doSearch()
 }
-function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
+function openAdd() { editId.value = null; editData.value = { orderDate: todayYmd() }; dialogVisible.value = true }
 function displayDiscountRate(rate) {
   const value = Number(rate)
   return Number.isFinite(value) && value > 0 && value <= 2 ? value * 100 : rate
 }
 function openEdit(row) {
   editId.value = row.id
-  editData.value = { ...row, discountRate: displayDiscountRate(row.discountRate), supplierId: row.supplierId || '' }
+  editData.value = { ...row, discountRate: displayDiscountRate(row.discountRate), supplierId: row.supplierId || '', salesOrderId: row.salesOrderId || '' }
   dialogVisible.value = true
 }
 async function handleDelete(row) {

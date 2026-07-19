@@ -60,6 +60,7 @@ public class PurchaseOrder {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (orderDate == null) orderDate = createdAt.toLocalDate();
     }
 
     public Long getId() { return id; }
