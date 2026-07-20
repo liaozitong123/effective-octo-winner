@@ -25,6 +25,7 @@ const tableRef = ref(null)
 const dialogVisible = ref(false)
 const editId = ref(null)
 const editData = ref({})
+const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱']
 
 const columns = [
   { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '下单日期' },
@@ -33,6 +34,7 @@ const columns = [
   { key: 'boxType', label: '盒式' }, { key: 'fluteType', label: '楞别' }, { key: 'singleArea', label: '单个面积' }, { key: 'qty', label: '下单数量' },
   { key: 'unitPrice', label: '客户平方单价' }, { key: 'boxUnitPrice', label: '纸箱单价' },
   { key: 'totalAmount', label: '总金额' }, { key: 'notes', label: '备注', slot: 'notes', minWidth: 150 },
+  { key: 'productionStatus', label: '生产备注' },
 ]
 
 const fields = [
@@ -48,6 +50,7 @@ const fields = [
   { key: 'qty', label: '下单数量', type: 'number', required: true },
   { key: 'boxUnitPrice', label: '纸箱单价(元)', type: 'number', hintKey: 'referenceBoxUnitPrice', hintLabel: '参考单价' },
   { key: 'totalAmount', label: '总金额(元)', type: 'display' },
+  { key: 'productionStatus', label: '生产备注', type: 'select', options: PRODUCTION_STATUS_OPTIONS },
   { key: 'notes', label: '备注', type: 'image-note' },
 ]
 

@@ -1,24 +1,46 @@
 <template>
-  <div>
+  <div class="production-page">
+    <div class="production-filter-bar">
+      <el-radio-group v-model="printFilter" size="small" @change="applyPrintFilter">
+        <el-radio-button label="all">全部</el-radio-button>
+        <el-radio-button label="printed">已打印</el-radio-button>
+        <el-radio-button label="unprinted">未打印</el-radio-button>
+      </el-radio-group>
+    </div>
     <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索生产单号/采购单号/客户/供应商..."
-      hideAdd @edit="openEdit" @delete="handleDelete" />
+      hideAdd showPrint @edit="openEdit" @delete="handleDelete" @print="handlePrint">
+      <template #printStatus="{ row }">
+        <span :class="['print-status', row.printed ? 'is-printed' : 'is-unprinted']">
+          {{ row.printStatus || (row.printed ? '已打印' : '未打印') }}
+        </span>
+      </template>
+      <template #notes="{ row }">
+        <img v-if="isImageNote(row.notes)" :src="row.notes" class="note-thumb" alt="备注图片" />
+        <span v-else class="note-text">{{ row.notes || '-' }}</span>
+      </template>
+    </DataTable>
     <FormDialog v-model="dialogVisible" :fields="fields" :isEdit="!!editId" :initialData="editData" :onSubmit="handleSubmit" />
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
 import { productionOrdersAPI } from '../../api/production'
 
 const tableRef = ref(null)
+const router = useRouter()
 const dialogVisible = ref(false)
 const editId = ref(null)
 const editData = ref({})
+const printFilter = ref('all')
+const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱']
 
 const columns = [
+  { key: 'printStatus', label: '状态', slot: 'printStatus', width: 86, minWidth: 86 },
   { key: 'purchaseOrderNo', label: '采购单号', minWidth: 150 },
   { key: 'orderNo', label: '生产单号', minWidth: 150 },
   { key: 'orderDate', label: '下单日期', minWidth: 110 },
@@ -38,6 +60,8 @@ const columns = [
   { key: 'cutCount', label: '开数', width: 72, minWidth: 72 },
   { key: 'totalArea', label: '总面积', minWidth: 110 },
   { key: 'operator', label: '生产员', minWidth: 110 },
+  { key: 'notes', label: '备注', slot: 'notes', minWidth: 150 },
+  { key: 'productionStatus', label: '生产备注', minWidth: 100 },
 ]
 
 const fields = [
@@ -59,12 +83,20 @@ const fields = [
   { key: 'boardWidth', label: '纸板宽度', type: 'display' },
   { key: 'cutCount', label: '开数', type: 'display' },
   { key: 'totalArea', label: '总面积', type: 'display' },
+  { key: 'notes', label: '备注', type: 'display' },
+  { key: 'productionStatus', label: '生产备注', type: 'select', options: PRODUCTION_STATUS_OPTIONS },
   { key: 'operator', label: '生产员' },
 ]
 
-function toApiData(form) { return { operator: form.operator || '' } }
-function fetchData(p) { return productionOrdersAPI.list(p) }
+function isImageNote(value) {
+  return typeof value === 'string' && value.startsWith('data:image/')
+}
+
+function toApiData(form) { return { operator: form.operator || '', productionStatus: form.productionStatus || '' } }
+function fetchData(p) { return productionOrdersAPI.list({ ...p, printStatus: printFilter.value }) }
 function openEdit(row) { editId.value = row.id; editData.value = { ...row }; dialogVisible.value = true }
+function handlePrint(row) { router.push(`/production/orders/print?id=${row.id}`) }
+function applyPrintFilter() { tableRef.value?.doSearch() }
 async function handleDelete(row) {
   await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
   await productionOrdersAPI.delete(row.id)
@@ -75,3 +107,49 @@ async function handleSubmit(form) {
   tableRef.value.loadData()
 }
 </script>
+
+<style scoped>
+.production-page {
+  display: grid;
+  gap: 12px;
+}
+
+.production-filter-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius);
+  background: var(--erp-panel);
+}
+
+.print-status {
+  font-weight: 800;
+}
+
+.print-status.is-printed {
+  color: #16a34a;
+}
+
+.print-status.is-unprinted {
+  color: #dc2626;
+}
+
+.note-thumb {
+  width: 54px;
+  height: 38px;
+  object-fit: cover;
+  border: 1px solid var(--erp-border);
+  border-radius: 6px;
+  display: block;
+}
+
+.note-text {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+</style>

@@ -22,6 +22,7 @@ import java.util.*;
 public class PurchaseOrderController {
     @Autowired private PurchaseOrderRepository repo;
     @Autowired private SupplierRepository supplierRepo;
+    @Autowired private SalesOrderRepository salesOrderRepo;
     @Autowired private com.cartonerp.service.BusinessService businessService;
     @Autowired private ProductionOrderService productionOrderService;
     @Autowired private JdbcTemplate jdbcTemplate;
@@ -51,7 +52,7 @@ public class PurchaseOrderController {
                 + "po.customer_id, po.material_type, po.material_name, po.spec, po.qty, po.unit, "
                 + "po.unit_price, po.total_amount, po.status, po.expected_date as expected_date, po.notes, "
                 + "po.created_at as created_at, po.product_name, po.material, po.box_type, po.stitch_type, "
-                + "po.production_material, po.flute_type, po.board_length, po.board_width, "
+                + "po.production_status, po.production_material, po.flute_type, po.board_length, po.board_width, "
                 + "po.board_qty, po.cut_count, po.crease, po.board_area, po.total_area, "
                 + "po.material_base_price, po.discount_rate, po.board_unit_price, po.profit_rate, "
                 + "po.board_amount, po.sign_date as sign_date, po.actual_qty, po.actual_amount "
@@ -126,6 +127,13 @@ public class PurchaseOrderController {
         if (o.getMaterial() != null) ex.setMaterial(o.getMaterial());
         if (o.getBoxType() != null) ex.setBoxType(o.getBoxType());
         if (o.getStitchType() != null) ex.setStitchType(o.getStitchType());
+        if (o.getProductionStatus() != null) {
+            ex.setProductionStatus(o.getProductionStatus());
+            if (ex.getSalesOrder() != null) {
+                ex.getSalesOrder().setProductionStatus(o.getProductionStatus());
+                salesOrderRepo.save(ex.getSalesOrder());
+            }
+        }
         if (o.getProductionMaterial() != null) ex.setProductionMaterial(o.getProductionMaterial());
         if (o.getFluteType() != null) ex.setFluteType(o.getFluteType());
         if (o.getBoardLength() != null) ex.setBoardLength(o.getBoardLength());
@@ -199,6 +207,7 @@ public class PurchaseOrderController {
         m.put("material", safeString(rs, "material"));
         m.put("boxType", safeString(rs, "box_type"));
         m.put("stitchType", safeString(rs, "stitch_type"));
+        m.put("productionStatus", safeString(rs, "production_status"));
         m.put("productionMaterial", safeString(rs, "production_material"));
         m.put("fluteType", safeString(rs, "flute_type"));
         m.put("boardLength", numberValue(rs, "board_length"));
@@ -259,6 +268,7 @@ public class PurchaseOrderController {
         m.put("createdAt", o.getCreatedAt());
         m.put("productName", o.getProductName()); m.put("material", o.getMaterial());
         m.put("boxType", o.getBoxType()); m.put("stitchType", o.getStitchType());
+        m.put("productionStatus", o.getProductionStatus());
         m.put("productionMaterial", o.getProductionMaterial());
         m.put("fluteType", o.getFluteType()); m.put("boardLength", o.getBoardLength());
         m.put("boardWidth", o.getBoardWidth()); m.put("boardQty", o.getBoardQty());

@@ -59,6 +59,7 @@ public class ProductionOrderService {
         target.setMaterial(source.getMaterial());
         target.setBoxType(source.getBoxType());
         target.setStitchType(source.getStitchType());
+        target.setProductionStatus(source.getProductionStatus());
         target.setUnitPrice(source.getUnitPrice());
         target.setQty(source.getQty());
         target.setUnit(source.getUnit() != null ? source.getUnit() : "个");
@@ -80,7 +81,14 @@ public class ProductionOrderService {
         target.setSignDate(source.getSignDate());
         target.setActualQty(source.getActualQty());
         target.setActualAmount(source.getActualAmount());
+        target.setNotes(resolveNotes(source));
         if (target.getStatus() == null || target.getStatus().isBlank()) target.setStatus("待排产");
+    }
+
+    private String resolveNotes(PurchaseOrder purchaseOrder) {
+        SalesOrder salesOrder = purchaseOrder.getSalesOrder();
+        if (salesOrder != null && salesOrder.getNotes() != null) return salesOrder.getNotes();
+        return purchaseOrder.getNotes();
     }
 
     private Customer resolveCustomer(PurchaseOrder purchaseOrder) {

@@ -22,6 +22,7 @@ public class SalesOrder {
     @Column(length = 200) private String spec;
     @Column(length = 120) private String material;
     private Integer qty = 0;
+    @Column(length = 20) private String productionStatus;
     @Column(length = 20) private String unit = "个";
     @Column(length = 30) private String boxType;              // 盒式
     @Column(length = 30) private String fluteType;            // 楞别
@@ -48,6 +49,7 @@ public class SalesOrder {
     public String getSpec() { return spec; }
     public String getMaterial() { return material; }
     public Integer getQty() { return qty; }
+    public String getProductionStatus() { return productionStatus; }
     public String getUnit() { return unit; }
     public String getBoxType() { return boxType; }
     public String getFluteType() { return fluteType; }
@@ -66,6 +68,7 @@ public class SalesOrder {
     public void setSpec(String s) { this.spec = s; }
     public void setMaterial(String m) { this.material = m; }
     public void setQty(Integer q) { this.qty = q; }
+    public void setProductionStatus(String p) { this.productionStatus = p; }
     public void setUnit(String u) { this.unit = u; }
     public void setBoxType(String b) { this.boxType = b; }
     public void setFluteType(String f) { this.fluteType = f; }

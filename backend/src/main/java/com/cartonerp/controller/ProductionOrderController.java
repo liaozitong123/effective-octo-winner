@@ -4,6 +4,7 @@ import com.cartonerp.common.Result;
 import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.ProductionRecord;
 import com.cartonerp.entity.PurchaseOrder;
+import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.*;
 import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.*;
 
 @RestController
@@ -20,22 +22,32 @@ import java.util.*;
 public class ProductionOrderController {
     @Autowired private ProductionOrderRepository repo;
     @Autowired private SalesOrderRepository salesOrderRepo;
+    @Autowired private PurchaseOrderRepository purchaseOrderRepo;
     @Autowired private ProductionRecordRepository recordRepo;
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
+                                                   @RequestParam(defaultValue = "all") String printStatus,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
         Specification<ProductionOrder> spec = (root, query, cb) -> {
-            if (q.isEmpty()) return null;
-            String p = "%" + q + "%";
-            return cb.or(
-                cb.like(root.get("orderNo"), p),
-                cb.like(root.get("productName"), p),
-                cb.like(root.join("purchaseOrder", JoinType.LEFT).get("orderNo"), p),
-                cb.like(root.join("customer", JoinType.LEFT).get("name"), p),
-                cb.like(root.join("supplier", JoinType.LEFT).get("name"), p)
-            );
+            List<Predicate> predicates = new ArrayList<>();
+            if (q != null && !q.isBlank()) {
+                String p = "%" + q.trim() + "%";
+                predicates.add(cb.or(
+                    cb.like(root.get("orderNo"), p),
+                    cb.like(root.get("productName"), p),
+                    cb.like(root.join("purchaseOrder", JoinType.LEFT).get("orderNo"), p),
+                    cb.like(root.join("customer", JoinType.LEFT).get("name"), p),
+                    cb.like(root.join("supplier", JoinType.LEFT).get("name"), p)
+                ));
+            }
+            if ("printed".equals(printStatus)) {
+                predicates.add(cb.isTrue(root.get("printed")));
+            } else if ("unprinted".equals(printStatus)) {
+                predicates.add(cb.or(cb.isFalse(root.get("printed")), cb.isNull(root.get("printed"))));
+            }
+            return predicates.isEmpty() ? null : cb.and(predicates.toArray(new Predicate[0]));
         };
         Page<ProductionOrder> pg = repo.findAll(spec, PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "id")));
         return Result.okWithTotal(pg.getContent().stream().map(this::toMap).toList(), pg.getTotalElements());
@@ -43,24 +55,25 @@ public class ProductionOrderController {
 
     @GetMapping("/{id}")
     public Result<Map<String, Object>> get(@PathVariable Long id) {
-        return repo.findById(id).map(o -> Result.ok(toMap(o))).orElse(Result.fail(404, "不存在"));
+        return repo.findById(id).map(o -> Result.ok(toMap(o))).orElse(Result.fail(404, "not found"));
     }
 
     @GetMapping("/{id}/progress")
     public Result<Map<String, Object>> progress(@PathVariable Long id) {
         ProductionOrder po = repo.findById(id).orElse(null);
-        if (po == null) return Result.fail(404, "不存在");
+        if (po == null) return Result.fail(404, "not found");
         List<ProductionRecord> records = recordRepo.findByProductionOrderId(id);
+        int plannedQty = po.getQty() != null ? po.getQty() : 0;
         long currentOutput = records.stream().mapToLong(r -> r.getOutputQty() != null ? r.getOutputQty() : 0).max().orElse(0);
         long totalWaste = records.stream().mapToLong(r -> r.getWasteQty() != null ? r.getWasteQty() : 0).sum();
-        double pct = po.getQty() > 0 ? Math.round(currentOutput * 1000.0 / po.getQty()) / 10.0 : 0;
+        double pct = plannedQty > 0 ? Math.round(currentOutput * 1000.0 / plannedQty) / 10.0 : 0;
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("productionOrderNo", po.getOrderNo());
         m.put("productName", po.getProductName());
-        m.put("plannedQty", po.getQty());
+        m.put("plannedQty", plannedQty);
         m.put("totalOutput", currentOutput);
         m.put("totalWaste", totalWaste);
-        m.put("remaining", (po.getQty() != null ? po.getQty() : 0) - currentOutput);
+        m.put("remaining", plannedQty - currentOutput);
         m.put("progressPct", pct);
         m.put("status", po.getStatus());
         return Result.ok(m);
@@ -73,34 +86,57 @@ public class ProductionOrderController {
         o.setOrderNo(OrderNumberUtil.next("PRD"));
         if (o.getStatus() == null) o.setStatus("待排产");
         applyBoardCalculation(o);
-        return Result.ok(toMap(repo.save(o)), "创建成功");
+        return Result.ok(toMap(repo.save(o)), "created");
     }
 
     @PutMapping("/{id}")
     public Result<Map<String, Object>> update(@PathVariable Long id, @RequestBody ProductionOrder o) {
         ProductionOrder ex = repo.findById(id).orElse(null);
-        if (ex == null) return Result.fail(404, "不存在");
+        if (ex == null) return Result.fail(404, "not found");
         if (o.getOperator() != null) ex.setOperator(o.getOperator());
-        return Result.ok(toMap(repo.save(ex)), "更新成功");
+        if (o.getProductionStatus() != null) {
+            ex.setProductionStatus(o.getProductionStatus());
+            PurchaseOrder purchaseOrder = ex.getPurchaseOrder();
+            SalesOrder salesOrder = purchaseOrder != null ? purchaseOrder.getSalesOrder() : ex.getSalesOrder();
+            if (purchaseOrder != null) {
+                purchaseOrder.setProductionStatus(o.getProductionStatus());
+                purchaseOrderRepo.save(purchaseOrder);
+            }
+            if (salesOrder != null) {
+                salesOrder.setProductionStatus(o.getProductionStatus());
+                salesOrderRepo.save(salesOrder);
+            }
+        }
+        return Result.ok(toMap(repo.save(ex)), "updated");
+    }
+
+    @PostMapping("/{id}/mark-printed")
+    public Result<Map<String, Object>> markPrinted(@PathVariable Long id) {
+        ProductionOrder ex = repo.findById(id).orElse(null);
+        if (ex == null) return Result.fail(404, "not found");
+        ex.setPrinted(true);
+        return Result.ok(toMap(repo.save(ex)), "updated");
     }
 
     @DeleteMapping("/{id}")
     public Result<?> delete(@PathVariable Long id) {
         try {
-            // Delete child records first
             List<ProductionRecord> records = recordRepo.findByProductionOrderId(id);
             recordRepo.deleteAll(records);
             repo.deleteById(id);
-            return Result.ok(null, "删除成功");
+            return Result.ok(null, "deleted");
         } catch (Exception e) {
-            return Result.fail(400, "删除失败：请先删除关联数据");
+            return Result.fail(400, "delete failed");
         }
     }
 
     private Map<String, Object> toMap(ProductionOrder o) {
         PurchaseOrder purchaseOrder = o.getPurchaseOrder();
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", o.getId()); m.put("orderNo", o.getOrderNo());
+        m.put("id", o.getId());
+        m.put("orderNo", o.getOrderNo());
+        m.put("printed", isPrinted(o));
+        m.put("printStatus", isPrinted(o) ? "已打印" : "未打印");
         m.put("purchaseOrderNo", purchaseOrder != null ? purchaseOrder.getOrderNo() : "");
         m.put("orderDate", purchaseOrder != null ? purchaseOrder.getOrderDate() : "");
         m.put("salesOrderNo", o.getSalesOrder() != null ? o.getSalesOrder().getOrderNo() : "");
@@ -110,6 +146,7 @@ public class ProductionOrderController {
         m.put("material", purchaseOrder != null ? purchaseOrder.getMaterial() : o.getMaterial());
         m.put("boxType", purchaseOrder != null ? purchaseOrder.getBoxType() : o.getBoxType());
         m.put("stitchType", purchaseOrder != null ? purchaseOrder.getStitchType() : o.getStitchType());
+        m.put("productionStatus", purchaseOrder != null ? purchaseOrder.getProductionStatus() : o.getProductionStatus());
         m.put("unitPrice", purchaseOrder != null ? purchaseOrder.getUnitPrice() : o.getUnitPrice());
         m.put("supplierName", sourceSupplierName(o, purchaseOrder));
         m.put("productionMaterial", purchaseOrder != null ? purchaseOrder.getProductionMaterial() : o.getProductionMaterial());
@@ -129,14 +166,28 @@ public class ProductionOrderController {
         m.put("signDate", purchaseOrder != null ? purchaseOrder.getSignDate() : o.getSignDate());
         m.put("actualQty", purchaseOrder != null ? purchaseOrder.getActualQty() : o.getActualQty());
         m.put("actualAmount", purchaseOrder != null ? purchaseOrder.getActualAmount() : o.getActualAmount());
-        m.put("specNotes", o.getSpecNotes()); m.put("urgent", o.getUrgent());
+        m.put("specNotes", o.getSpecNotes());
+        m.put("urgent", o.getUrgent());
         m.put("orderArea", o.getOrderArea());
         m.put("qty", purchaseOrder != null ? purchaseOrder.getQty() : o.getQty());
         m.put("status", o.getStatus());
-        m.put("startDate", o.getStartDate()); m.put("finishDate", o.getFinishDate());
-        m.put("workshop", o.getWorkshop()); m.put("operator", o.getOperator());
-        m.put("notes", o.getNotes()); m.put("createdAt", o.getCreatedAt());
+        m.put("startDate", o.getStartDate());
+        m.put("finishDate", o.getFinishDate());
+        m.put("workshop", o.getWorkshop());
+        m.put("operator", o.getOperator());
+        m.put("notes", sourceNotes(o, purchaseOrder));
+        m.put("createdAt", o.getCreatedAt());
         return m;
+    }
+
+    private boolean isPrinted(ProductionOrder productionOrder) {
+        return Boolean.TRUE.equals(productionOrder.getPrinted());
+    }
+
+    private String sourceNotes(ProductionOrder productionOrder, PurchaseOrder purchaseOrder) {
+        SalesOrder salesOrder = purchaseOrder != null ? purchaseOrder.getSalesOrder() : productionOrder.getSalesOrder();
+        if (salesOrder != null && salesOrder.getNotes() != null) return salesOrder.getNotes();
+        return productionOrder.getNotes();
     }
 
     private String sourceCustomerName(ProductionOrder productionOrder, PurchaseOrder purchaseOrder) {

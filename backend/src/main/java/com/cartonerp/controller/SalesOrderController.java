@@ -92,6 +92,7 @@ public class SalesOrderController {
         if (o.getUnit() != null) ex.setUnit(o.getUnit());
         if (o.getBoxType() != null) ex.setBoxType(o.getBoxType());
         if (o.getFluteType() != null) ex.setFluteType(o.getFluteType());
+        if (o.getProductionStatus() != null) ex.setProductionStatus(o.getProductionStatus());
         if (o.getSingleArea() != null) ex.setSingleArea(o.getSingleArea());
         if (o.getUnitPrice() != null) ex.setUnitPrice(o.getUnitPrice());
         if (o.getBoxUnitPrice() != null) ex.setBoxUnitPrice(o.getBoxUnitPrice());
@@ -128,6 +129,7 @@ public class SalesOrderController {
         target.setMaterial(source.getMaterial());
         target.setBoxType(source.getBoxType());
         target.setFluteType(source.getFluteType());
+        target.setProductionStatus(source.getProductionStatus());
         target.setQty(source.getQty());
         target.setUnit(source.getUnit());
         target.setUnitPrice(source.getUnitPrice());
@@ -205,6 +207,7 @@ public class SalesOrderController {
         m.put("material", o.getMaterial()); m.put("qty", o.getQty());
         m.put("unit", o.getUnit()); m.put("boxType", o.getBoxType());
         m.put("fluteType", o.getFluteType()); m.put("singleArea", o.getSingleArea());
+        m.put("productionStatus", o.getProductionStatus());
         m.put("unitPrice", o.getUnitPrice()); m.put("boxUnitPrice", o.getBoxUnitPrice());
         m.put("totalAmount", o.getTotalAmount()); m.put("status", o.getStatus());
         m.put("deliveryDate", o.getDeliveryDate()); m.put("notes", o.getNotes());

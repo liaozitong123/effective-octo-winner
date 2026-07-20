@@ -31,6 +31,8 @@ public class ProductionOrder {
     @Column(length = 20) private String stitchType;      // 钉口
     private Double unitPrice = 0.0;                      // 客户平方单价
     private Integer qty = 0;
+    @Column(length = 20) private String productionStatus;
+    private Boolean printed = false;
     @Column(length = 20) private String unit = "个";
     @Column(length = 30) private String status = "待排产";
 
@@ -78,7 +80,9 @@ public class ProductionOrder {
     public String getStitchType() { return stitchType; }
     public Double getUnitPrice() { return unitPrice; }
     public Integer getQty() { return qty; }
+    public String getProductionStatus() { return productionStatus; }
     public String getStatus() { return status; }
+    public Boolean getPrinted() { return printed; }
     public LocalDate getStartDate() { return startDate; }
     public LocalDate getFinishDate() { return finishDate; }
     public String getWorkshop() { return workshop; }
@@ -99,7 +103,9 @@ public class ProductionOrder {
     public void setUnit(String u) { this.unit = u; }
     public void setUnitPrice(Double u) { this.unitPrice = u; }
     public void setQty(Integer q) { this.qty = q; }
+    public void setProductionStatus(String p) { this.productionStatus = p; }
     public void setStatus(String s) { this.status = s; }
+    public void setPrinted(Boolean p) { this.printed = p; }
     public void setStartDate(LocalDate d) { this.startDate = d; }
     public void setFinishDate(LocalDate d) { this.finishDate = d; }
     public void setWorkshop(String w) { this.workshop = w; }
