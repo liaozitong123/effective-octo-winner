@@ -258,4 +258,24 @@ async function handleLogout() {
     padding: 12px;
   }
 }
+
+@media print {
+  .sidebar,
+  .topbar {
+    display: none !important;
+  }
+
+  .layout,
+  .layout-container,
+  .main-content {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+}
 </style>

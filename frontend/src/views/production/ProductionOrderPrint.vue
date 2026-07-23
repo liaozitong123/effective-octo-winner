@@ -129,7 +129,7 @@ onMounted(async () => {
 <style scoped>
 @page {
   size: A4 portrait;
-  margin: 10mm;
+  margin: 6mm;
 }
 
 .production-print-page {
@@ -165,85 +165,90 @@ onMounted(async () => {
   align-items: flex-end;
   justify-content: space-between;
   border-bottom: 2px solid #111827;
-  padding-bottom: 5mm;
-  margin-bottom: 5mm;
+  padding-bottom: 3mm;
+  margin-bottom: 3mm;
 }
 
 .sheet-header h1 {
-  font-size: 26px;
+  font-size: 23px;
   line-height: 1;
   margin: 0;
 }
 
 .order-no {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-left: 1px solid #111827;
   border-top: 1px solid #111827;
-  margin-bottom: 5mm;
+  margin-bottom: 3mm;
 }
 
 .summary-grid div {
-  min-height: 13mm;
+  min-height: 9mm;
   border-right: 1px solid #111827;
   border-bottom: 1px solid #111827;
-  padding: 2.2mm 2.5mm;
+  padding: 1.4mm 2mm;
 }
 
 .summary-grid span {
   display: block;
   color: #4b5563;
-  font-size: 12px;
-  margin-bottom: 1.5mm;
+  font-size: 10.5px;
+  margin-bottom: .6mm;
 }
 
 .summary-grid strong {
-  font-size: 15px;
-  line-height: 1.25;
+  font-size: 12.5px;
+  line-height: 1.15;
 }
 
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
-  line-height: 1.25;
+  font-size: 12px;
+  line-height: 1.15;
 }
 
 .detail-table th,
 .detail-table td {
   border: 1px solid #111827;
-  padding: 2.2mm 2.5mm;
+  padding: 1.25mm 2mm;
   text-align: left;
 }
 
 .detail-table th {
-  width: 28mm;
+  width: 23mm;
   background: #f3f4f6;
 }
 
 .notes-section {
-  margin-top: 6mm;
+  flex: 1 1 auto;
+  margin-top: 3mm;
   border: 1px solid #111827;
-  min-height: 22mm;
-  padding: 3mm;
+  min-height: 110mm;
+  padding: 2mm;
   page-break-inside: avoid;
+  overflow: hidden;
 }
 
 .notes-section h2 {
-  font-size: 14px;
-  margin: 0 0 2mm;
+  font-size: 12.5px;
+  line-height: 1;
+  margin: 0 0 1.5mm;
 }
 
 .note-text {
+  height: calc(100% - 5mm);
   min-height: 12mm;
+  overflow: hidden;
   white-space: pre-wrap;
-  line-height: 1.45;
-  font-size: 13px;
+  line-height: 1.35;
+  font-size: 12px;
 }
 
 .note-image {
@@ -255,7 +260,7 @@ onMounted(async () => {
 }
 
 .notes-section.has-image {
-  min-height: 145mm;
+  min-height: 158mm;
   display: flex;
   flex-direction: column;
 }
@@ -269,20 +274,20 @@ onMounted(async () => {
 .worker-fill-section {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2.5mm;
-  margin-top: 3mm;
+  gap: 2mm;
+  margin-top: 2mm;
   border: 1px solid #111827;
-  padding: 2mm;
+  padding: 1.2mm;
   page-break-inside: avoid;
 }
 
 .worker-fill-item {
   display: grid;
-  grid-template-columns: 18mm minmax(0, 1fr);
+  grid-template-columns: 16mm minmax(0, 1fr);
   align-items: end;
-  gap: 2mm;
-  min-height: 7mm;
-  font-size: 12.5px;
+  gap: 1.5mm;
+  min-height: 5.5mm;
+  font-size: 11.5px;
   font-weight: 700;
 }
 
@@ -292,22 +297,22 @@ onMounted(async () => {
 }
 
 .blank-line {
-  height: 5mm;
+  height: 4mm;
   border-bottom: 1px solid #111827;
 }
 
 .blank-box {
-  min-height: 5mm;
+  min-height: 4mm;
   border-bottom: 1px solid #111827;
 }
 
 .sign-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12mm;
+  gap: 10mm;
   margin-top: auto;
-  padding-top: 7mm;
-  font-size: 14px;
+  padding-top: 4mm;
+  font-size: 12.5px;
   page-break-inside: avoid;
 }
 
@@ -331,12 +336,44 @@ onMounted(async () => {
   .print-sheet {
     width: 100%;
     max-width: none;
-    min-height: auto;
+    height: 285mm;
+    min-height: 285mm;
     border: none;
     padding: 0;
     box-shadow: none;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+  }
+
+  .sheet-header {
+    padding-bottom: 2mm;
+    margin-bottom: 2mm;
+  }
+
+  .summary-grid {
+    margin-bottom: 2mm;
+  }
+
+  .summary-grid div {
+    min-height: 7.5mm;
+    padding: 1mm 1.6mm;
+  }
+
+  .detail-table th,
+  .detail-table td {
+    padding: .9mm 1.6mm;
+  }
+
+  .worker-fill-section {
+    margin-top: 1.6mm;
+  }
+
+  .notes-section {
+    min-height: 0;
+  }
+
+  .notes-section.has-image {
+    min-height: 0;
   }
 }
 </style>
