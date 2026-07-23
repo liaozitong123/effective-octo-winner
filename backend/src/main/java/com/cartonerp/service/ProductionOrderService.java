@@ -35,6 +35,7 @@ public class ProductionOrderService {
     }
 
     private boolean shouldSyncToProduction(PurchaseOrder purchaseOrder) {
+        if ("已退货".equals(purchaseOrder.getStatus())) return false;
         return purchaseOrder.getSignDate() != null || "已收货".equals(purchaseOrder.getStatus());
     }
 

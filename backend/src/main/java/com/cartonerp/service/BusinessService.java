@@ -47,7 +47,7 @@ public class BusinessService {
             .findFirst();
         if (opt.isPresent()) {
             Inventory inv = opt.get();
-            inv.setQty(inv.getQty() + (po.getQty() != null ? po.getQty() : 0));
+            inv.setQty(safeInt(inv.getQty()) + safeInt(po.getQty()));
             inv.setUpdatedAt(LocalDateTime.now());
             inventoryRepo.save(inv);
         } else {
@@ -55,11 +55,15 @@ public class BusinessService {
             inv.setItemType(materialType);
             inv.setItemName(materialName);
             inv.setSpec(spec);
-            inv.setQty(po.getQty() != null ? po.getQty() : 0);
+            inv.setQty(safeInt(po.getQty()));
             inv.setUnit(po.getUnit() != null ? po.getUnit() : "");
             inv.setUpdatedAt(LocalDateTime.now());
             inventoryRepo.save(inv);
         }
+    }
+
+    private int safeInt(Integer value) {
+        return value != null ? value : 0;
     }
 
     private String firstNonBlank(String... values) {

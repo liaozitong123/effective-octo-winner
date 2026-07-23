@@ -176,12 +176,9 @@ public class PurchaseOrderController {
 
         applyBoardCalculation(ex);
         PurchaseOrder saved = repo.save(ex);
-        if (!wasReceived && "已收货".equals(saved.getStatus())) {
-            businessService.onPurchaseReceived(saved);
-        }
-        productionOrderService.createOrUpdateFromSignedPurchase(saved);
+        List<String> warnings = syncReceiptSideEffects(saved, wasReceived);
 
-        return Result.ok(toMap(saved), "收货信息已更新");
+        return Result.ok(toMap(saved), warnings.isEmpty() ? "收货信息已更新" : "收货信息已保存，自动同步未完全完成：" + String.join("；", warnings));
     }
 
     @DeleteMapping("/{id}") public Result<?> delete(@PathVariable Long id) { repo.deleteById(id); return Result.ok(null, "删除成功"); }
@@ -359,7 +356,30 @@ public class PurchaseOrderController {
         String text = String.valueOf(value).trim();
         int timeSeparator = text.indexOf('T');
         if (timeSeparator > 0) text = text.substring(0, timeSeparator);
-        return LocalDate.parse(text);
+        try {
+            return LocalDate.parse(text);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private List<String> syncReceiptSideEffects(PurchaseOrder saved, boolean wasReceived) {
+        List<String> warnings = new ArrayList<>();
+        if (!wasReceived && "已收货".equals(saved.getStatus())) {
+            try {
+                businessService.onPurchaseReceived(saved);
+            } catch (RuntimeException e) {
+                warnings.add("库存同步失败");
+                e.printStackTrace();
+            }
+        }
+        try {
+            productionOrderService.createOrUpdateFromSignedPurchase(saved);
+        } catch (RuntimeException e) {
+            warnings.add("生产单同步失败");
+            e.printStackTrace();
+        }
+        return warnings;
     }
 
 }
