@@ -170,13 +170,13 @@ onMounted(async () => {
 }
 
 .sheet-header h1 {
-  font-size: 23px;
+  font-size: 26px;
   line-height: 1;
   margin: 0;
 }
 
 .order-no {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -198,20 +198,20 @@ onMounted(async () => {
 .summary-grid span {
   display: block;
   color: #4b5563;
-  font-size: 10.5px;
+  font-size: 11.5px;
   margin-bottom: .6mm;
 }
 
 .summary-grid strong {
-  font-size: 12.5px;
-  line-height: 1.15;
+  font-size: 14px;
+  line-height: 1.18;
 }
 
 .detail-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
-  line-height: 1.15;
+  font-size: 13.5px;
+  line-height: 1.2;
 }
 
 .detail-table th,
@@ -237,7 +237,7 @@ onMounted(async () => {
 }
 
 .notes-section h2 {
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1;
   margin: 0 0 1.5mm;
 }
@@ -247,8 +247,8 @@ onMounted(async () => {
   min-height: 12mm;
   overflow: hidden;
   white-space: pre-wrap;
-  line-height: 1.35;
-  font-size: 12px;
+  line-height: 1.4;
+  font-size: 13.5px;
 }
 
 .note-image {
@@ -287,7 +287,7 @@ onMounted(async () => {
   align-items: end;
   gap: 1.5mm;
   min-height: 5.5mm;
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -312,7 +312,7 @@ onMounted(async () => {
   gap: 10mm;
   margin-top: auto;
   padding-top: 4mm;
-  font-size: 12.5px;
+  font-size: 14px;
   page-break-inside: avoid;
 }
 
