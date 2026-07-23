@@ -57,6 +57,8 @@ public class PurchaseOrder {
     private java.time.LocalDate signDate;
     private Integer actualQty = 0;
     private Double actualAmount = 0.0;
+    @Column(columnDefinition = "TEXT") private String acceptanceNotes;
+    @Column(length = 120) private String signer;
     private LocalDate orderDate;
     private LocalDate expectedDate;
     @Column(columnDefinition = "TEXT") private String notes;
@@ -125,6 +127,8 @@ public class PurchaseOrder {
     public java.time.LocalDate getSignDate() { return signDate; }
     public Integer getActualQty() { return actualQty; }
     public Double getActualAmount() { return actualAmount; }
+    public String getAcceptanceNotes() { return acceptanceNotes; }
+    public String getSigner() { return signer; }
     public void setProductName(String p) { this.productName = p; }
     public void setMaterial(String m) { this.material = m; }
     public void setBoxType(String b) { this.boxType = b; }
@@ -147,4 +151,6 @@ public class PurchaseOrder {
     public void setSignDate(java.time.LocalDate d) { this.signDate = d; }
     public void setActualQty(Integer q) { this.actualQty = q; }
     public void setActualAmount(Double a) { this.actualAmount = a; }
+    public void setAcceptanceNotes(String n) { this.acceptanceNotes = n; }
+    public void setSigner(String s) { this.signer = s; }
 }

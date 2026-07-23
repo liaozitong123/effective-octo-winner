@@ -22,7 +22,6 @@ import java.util.*;
 public class ProductionOrderController {
     @Autowired private ProductionOrderRepository repo;
     @Autowired private SalesOrderRepository salesOrderRepo;
-    @Autowired private PurchaseOrderRepository purchaseOrderRepo;
     @Autowired private ProductionRecordRepository recordRepo;
 
     @GetMapping
@@ -94,19 +93,6 @@ public class ProductionOrderController {
         ProductionOrder ex = repo.findById(id).orElse(null);
         if (ex == null) return Result.fail(404, "not found");
         if (o.getOperator() != null) ex.setOperator(o.getOperator());
-        if (o.getProductionStatus() != null) {
-            ex.setProductionStatus(o.getProductionStatus());
-            PurchaseOrder purchaseOrder = ex.getPurchaseOrder();
-            SalesOrder salesOrder = purchaseOrder != null ? purchaseOrder.getSalesOrder() : ex.getSalesOrder();
-            if (purchaseOrder != null) {
-                purchaseOrder.setProductionStatus(o.getProductionStatus());
-                purchaseOrderRepo.save(purchaseOrder);
-            }
-            if (salesOrder != null) {
-                salesOrder.setProductionStatus(o.getProductionStatus());
-                salesOrderRepo.save(salesOrder);
-            }
-        }
         return Result.ok(toMap(repo.save(ex)), "updated");
     }
 
@@ -146,7 +132,7 @@ public class ProductionOrderController {
         m.put("material", purchaseOrder != null ? purchaseOrder.getMaterial() : o.getMaterial());
         m.put("boxType", purchaseOrder != null ? purchaseOrder.getBoxType() : o.getBoxType());
         m.put("stitchType", purchaseOrder != null ? purchaseOrder.getStitchType() : o.getStitchType());
-        m.put("productionStatus", purchaseOrder != null ? purchaseOrder.getProductionStatus() : o.getProductionStatus());
+        m.put("productionStatus", sourceProductionStatus(o, purchaseOrder));
         m.put("unitPrice", purchaseOrder != null ? purchaseOrder.getUnitPrice() : o.getUnitPrice());
         m.put("supplierName", sourceSupplierName(o, purchaseOrder));
         m.put("productionMaterial", purchaseOrder != null ? purchaseOrder.getProductionMaterial() : o.getProductionMaterial());
@@ -188,6 +174,13 @@ public class ProductionOrderController {
         SalesOrder salesOrder = purchaseOrder != null ? purchaseOrder.getSalesOrder() : productionOrder.getSalesOrder();
         if (salesOrder != null && salesOrder.getNotes() != null) return salesOrder.getNotes();
         return productionOrder.getNotes();
+    }
+
+    private String sourceProductionStatus(ProductionOrder productionOrder, PurchaseOrder purchaseOrder) {
+        SalesOrder salesOrder = purchaseOrder != null ? purchaseOrder.getSalesOrder() : productionOrder.getSalesOrder();
+        if (salesOrder != null && salesOrder.getProductionStatus() != null) return salesOrder.getProductionStatus();
+        if (purchaseOrder != null && purchaseOrder.getProductionStatus() != null) return purchaseOrder.getProductionStatus();
+        return productionOrder.getProductionStatus();
     }
 
     private String sourceCustomerName(ProductionOrder productionOrder, PurchaseOrder purchaseOrder) {

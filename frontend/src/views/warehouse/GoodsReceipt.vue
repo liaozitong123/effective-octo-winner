@@ -1,14 +1,28 @@
 <template>
-  <div>
-    <p style="margin-bottom:14px;color:#64748b;font-size:0.9rem;">收货/退货通过采购单的状态进行管理。修改采购单状态为"已收货"表示收货，改为"已退货"表示退货。</p>
-    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索采购单..."
-      @add="openAdd" @edit="openEdit" @delete="handleDelete">
+  <div class="receipt-page">
+    <DataTable
+      ref="tableRef"
+      :columns="columns"
+      :fetchData="fetchData"
+      search-placeholder="搜索采购单号/客户/供应商/规格..."
+      table-max-height="calc(100vh - 246px)"
+      hideAdd
+      @edit="openEdit"
+      @delete="handleDelete"
+    >
       <template #status="{ row }">
-        <el-tag :type="row.status === '已收货' ? 'success' : row.status === '已退货' ? 'danger' : ''" size="small">{{ row.status }}</el-tag>
+        <el-tag :type="statusTagType(row.status)" size="small">{{ row.status || '待收货' }}</el-tag>
       </template>
     </DataTable>
-    <FormDialog v-model="dialogVisible" :fields="fields" :isEdit="!!editId" :initialData="editData" :onSubmit="handleSubmit" />
   </div>
+  <FormDialog
+    v-model="dialogVisible"
+    :fields="fields"
+    :isEdit="!!editId"
+    :initialData="editData"
+    :onSubmit="handleSubmit"
+    :onChange="onFormChange"
+  />
 </template>
 
 <script setup>
@@ -16,31 +30,114 @@ import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
-import { purchaseOrdersAPI, suppliersAPI } from '../../api/purchase'
+import { purchaseOrdersAPI } from '../../api/purchase'
+import { applyBoardCalculation } from '../../utils/boardCalculation'
 
-const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
+const tableRef = ref(null)
+const dialogVisible = ref(false)
+const editId = ref(null)
+const editData = ref({})
+
 const columns = [
-  { key: 'id', label: 'ID', width: 60 }, { key: 'orderNo', label: '采购单号' }, { key: 'supplierName', label: '供应商' },
-  { key: 'materialType', label: '类型' }, { key: 'materialName', label: '材料名称' }, { key: 'qty', label: '数量' },
-  { key: 'status', label: '状态', slot: 'status' }, { key: 'orderDate', label: '日期' },
+  { key: 'status', label: '收货状态', slot: 'status', width: 92, minWidth: 92 },
+  { key: 'orderNo', label: '采购单号', minWidth: 150 },
+  { key: 'customerName', label: '客户', minWidth: 150 },
+  { key: 'spec', label: '规格', minWidth: 170 },
+  { key: 'qty', label: '下单数量', minWidth: 100 },
+  { key: 'supplierName', label: '供应商', minWidth: 150 },
+  { key: 'productionMaterial', label: '生产材质', minWidth: 120 },
+  { key: 'fluteType', label: '楞别', minWidth: 90 },
+  { key: 'boardLength', label: '纸板长度', minWidth: 110 },
+  { key: 'boardWidth', label: '纸板宽度', minWidth: 110 },
+  { key: 'boardQty', label: '纸板数量', minWidth: 110 },
+  { key: 'cutCount', label: '开数', width: 72, minWidth: 72 },
+  { key: 'crease', label: '凹压线', minWidth: 170 },
+  { key: 'boardArea', label: '纸板面积', minWidth: 110 },
+  { key: 'totalArea', label: '总面积', minWidth: 110 },
+  { key: 'materialBasePrice', label: '材质基价', minWidth: 110 },
+  { key: 'discountRate', label: '折率%', minWidth: 90 },
+  { key: 'boardUnitPrice', label: '纸板平方单价', minWidth: 130 },
+  { key: 'profitRate', label: '毛利率%', minWidth: 100 },
+  { key: 'boardAmount', label: '纸板金额', minWidth: 110 },
+  { key: 'actualQty', label: '实收数量', minWidth: 100 },
+  { key: 'actualAmount', label: '实收金额', minWidth: 110 },
+  { key: 'signDate', label: '签收日期', minWidth: 110 },
+  { key: 'acceptanceNotes', label: '验收说明', minWidth: 160 },
+  { key: 'signer', label: '签收人', minWidth: 100 },
 ]
+
 const fields = [
-  { key: 'orderNo', label: '采购单号', required: true }, { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
-  { key: 'materialType', label: '材料类型', type: 'select', options: ['纸板','辅料'] },
-  { key: 'materialName', label: '材料名称' }, { key: 'qty', label: '数量', type: 'number' },
-  { key: 'status', label: '状态', type: 'select', options: ['待收货','已收货','已退货'] },
-  { key: 'notes', label: '备注', type: 'textarea' },
+  { key: 'orderNo', label: '采购单号', type: 'display' },
+  { key: 'customerName', label: '客户', type: 'display' },
+  { key: 'spec', label: '规格', type: 'display' },
+  { key: 'qty', label: '下单数量', type: 'display' },
+  { key: 'supplierName', label: '供应商', type: 'display' },
+  { key: 'productionMaterial', label: '生产材质', type: 'display' },
+  { key: 'fluteType', label: '楞别', type: 'display' },
+  { key: 'boardLength', label: '纸板长度', type: 'display' },
+  { key: 'boardWidth', label: '纸板宽度', type: 'display' },
+  { key: 'boardQty', label: '纸板数量', type: 'display' },
+  { key: 'cutCount', label: '开数', type: 'display' },
+  { key: 'crease', label: '凹压线', type: 'display' },
+  { key: 'boardArea', label: '纸板面积', type: 'display' },
+  { key: 'totalArea', label: '总面积', type: 'display' },
+  { key: 'materialBasePrice', label: '材质基价', type: 'display' },
+  { key: 'discountRate', label: '折率%', type: 'display' },
+  { key: 'boardUnitPrice', label: '纸板平方单价', type: 'display' },
+  { key: 'profitRate', label: '毛利率%', type: 'display' },
+  { key: 'boardAmount', label: '纸板金额', type: 'display' },
+  { key: 'status', label: '收货状态', type: 'select', options: ['待收货', '已收货', '已退货'] },
+  { key: 'actualQty', label: '实收数量', type: 'number' },
+  { key: 'actualAmount', label: '实收金额', type: 'display' },
+  { key: 'signDate', label: '签收日期', type: 'date' },
+  { key: 'acceptanceNotes', label: '验收说明', type: 'textarea', full: true },
+  { key: 'signer', label: '签收人' },
 ]
-function toApiData(f) { return { ...f, supplier: f.supplierId ? { id: Number(f.supplierId) } : null } }
-function fetchData(p) { return purchaseOrdersAPI.list(p) }
-function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
-function openEdit(row) { editId.value = row.id; editData.value = { ...row, supplierId: row.supplierId || '' }; dialogVisible.value = true }
-async function handleDelete(row) {
-  await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
-  await purchaseOrdersAPI.delete(row.id); tableRef.value.loadData()
+
+function statusTagType(status) {
+  if (status === '已收货') return 'success'
+  if (status === '已退货') return 'danger'
+  return 'warning'
 }
+
+function fetchData(params) {
+  return purchaseOrdersAPI.list(params)
+}
+
+function onFormChange(data) {
+  return applyBoardCalculation(data, { autoBoardUnitPrice: false })
+}
+
+function openEdit(row) {
+  editId.value = row.id
+  editData.value = { ...row }
+  dialogVisible.value = true
+}
+
+async function handleDelete(row) {
+  await ElMessageBox.confirm('确定删除这张采购单吗？', '提示', { type: 'warning' })
+  await purchaseOrdersAPI.delete(row.id)
+  tableRef.value.loadData()
+}
+
 async function handleSubmit(form) {
-  const data = toApiData(form)
-  editId.value ? await purchaseOrdersAPI.update(editId.value, data) : await purchaseOrdersAPI.create(data); tableRef.value.loadData()
+  const calculated = applyBoardCalculation(form, { autoBoardUnitPrice: false })
+  const data = {
+    status: calculated.status || '待收货',
+    actualQty: calculated.actualQty === '' ? 0 : Number(calculated.actualQty),
+    actualAmount: calculated.actualAmount,
+    signDate: calculated.signDate || null,
+    acceptanceNotes: calculated.acceptanceNotes || '',
+    signer: calculated.signer || '',
+  }
+  await purchaseOrdersAPI.updateReceipt(editId.value, data)
+  tableRef.value.loadData()
 }
 </script>
+
+<style scoped>
+.receipt-page {
+  display: grid;
+  gap: 12px;
+}
+</style>

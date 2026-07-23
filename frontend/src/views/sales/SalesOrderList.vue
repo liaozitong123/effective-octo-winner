@@ -25,7 +25,8 @@ const tableRef = ref(null)
 const dialogVisible = ref(false)
 const editId = ref(null)
 const editData = ref({})
-const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱']
+const FLUTE_TYPE_OPTIONS = ['BC', 'EBC', 'EB', 'E', 'B', 'C']
+const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱', '不用封口']
 
 const columns = [
   { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '下单日期' },
@@ -44,7 +45,7 @@ const fields = [
   { key: 'spec', label: '规格(cm)' },
   { key: 'material', label: '客户材质' },
 
-  { key: 'fluteType', label: '楞别' },
+  { key: 'fluteType', label: '楞别', type: 'select', options: FLUTE_TYPE_OPTIONS },
   { key: 'singleArea', label: '单个面积(㎡)', type: 'display' },
   { key: 'unitPrice', label: '客户平方单价', type: 'number' },
   { key: 'qty', label: '下单数量', type: 'number', required: true },

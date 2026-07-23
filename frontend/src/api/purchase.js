@@ -13,5 +13,6 @@ export const purchaseOrdersAPI = {
   signSummary() { return request.get('/purchase-orders/sign-summary') },
   create(data) { return request.post('/purchase-orders', data) },
   update(id, data) { return request.put(`/purchase-orders/${id}`, data) },
+  updateReceipt(id, data) { return request.put(`/purchase-orders/${id}/receipt`, data) },
   delete(id) { return request.delete(`/purchase-orders/${id}`) },
 }

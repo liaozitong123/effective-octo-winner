@@ -37,7 +37,6 @@ const dialogVisible = ref(false)
 const editId = ref(null)
 const editData = ref({})
 const printFilter = ref('all')
-const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱']
 
 const columns = [
   { key: 'printStatus', label: '状态', slot: 'printStatus', width: 86, minWidth: 86 },
@@ -84,7 +83,7 @@ const fields = [
   { key: 'cutCount', label: '开数', type: 'display' },
   { key: 'totalArea', label: '总面积', type: 'display' },
   { key: 'notes', label: '备注', type: 'display' },
-  { key: 'productionStatus', label: '生产备注', type: 'select', options: PRODUCTION_STATUS_OPTIONS },
+  { key: 'productionStatus', label: '生产备注', type: 'display' },
   { key: 'operator', label: '生产员' },
 ]
 
@@ -92,7 +91,7 @@ function isImageNote(value) {
   return typeof value === 'string' && value.startsWith('data:image/')
 }
 
-function toApiData(form) { return { operator: form.operator || '', productionStatus: form.productionStatus || '' } }
+function toApiData(form) { return { operator: form.operator || '' } }
 function fetchData(p) { return productionOrdersAPI.list({ ...p, printStatus: printFilter.value }) }
 function openEdit(row) { editId.value = row.id; editData.value = { ...row }; dialogVisible.value = true }
 function handlePrint(row) { router.push(`/production/orders/print?id=${row.id}`) }

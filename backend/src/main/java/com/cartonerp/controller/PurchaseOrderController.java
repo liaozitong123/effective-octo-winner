@@ -13,6 +13,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDate;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -55,7 +56,8 @@ public class PurchaseOrderController {
                 + "po.production_status, po.production_material, po.flute_type, po.board_length, po.board_width, "
                 + "po.board_qty, po.cut_count, po.crease, po.board_area, po.total_area, "
                 + "po.material_base_price, po.discount_rate, po.board_unit_price, po.profit_rate, "
-                + "po.board_amount, po.sign_date as sign_date, po.actual_qty, po.actual_amount "
+                + "po.board_amount, po.sign_date as sign_date, po.actual_qty, po.actual_amount, "
+                + "po.acceptance_notes, po.signer "
                 + "from purchase_orders po "
                 + "left join sales_orders so on po.sales_order_id = so.id "
                 + "left join suppliers s on po.supplier_id = s.id "
@@ -110,6 +112,7 @@ public class PurchaseOrderController {
     public Result<Map<String, Object>> update(@PathVariable Long id, @RequestBody PurchaseOrder o) {
         PurchaseOrder ex = repo.findById(id).orElse(null);
         if (ex == null) return Result.fail(404, "不存在");
+        boolean wasReceived = "已收货".equals(ex.getStatus());
         if (o.getOrderNo() != null) ex.setOrderNo(o.getOrderNo());
         if (o.getSupplier() != null && o.getSupplier().getId() != null)
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(ex::setSupplier);
@@ -148,16 +151,37 @@ public class PurchaseOrderController {
         if (o.getBoardUnitPrice() != null) ex.setBoardUnitPrice(o.getBoardUnitPrice());
         if (o.getProfitRate() != null) ex.setProfitRate(o.getProfitRate());
         if (o.getBoardAmount() != null) ex.setBoardAmount(o.getBoardAmount());
-        if (o.getSignDate() != null) ex.setSignDate(o.getSignDate());
-        if (o.getActualQty() != null) ex.setActualQty(o.getActualQty());
-        if (o.getActualAmount() != null) ex.setActualAmount(o.getActualAmount());
         if (o.getNotes() != null) ex.setNotes(o.getNotes());
         applyBoardCalculation(ex);
         PurchaseOrder saved = repo.save(ex);
-        businessService.onPurchaseReceived(saved);
+        if (!wasReceived && "已收货".equals(saved.getStatus())) {
+            businessService.onPurchaseReceived(saved);
+        }
         productionOrderService.createOrUpdateFromSignedPurchase(saved);
 
         return Result.ok(toMap(saved), "更新成功");
+    }
+
+    @PutMapping("/{id}/receipt")
+    public Result<Map<String, Object>> updateReceipt(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        PurchaseOrder ex = repo.findById(id).orElse(null);
+        if (ex == null) return Result.fail(404, "不存在");
+        boolean wasReceived = "已收货".equals(ex.getStatus());
+
+        if (body.containsKey("status")) ex.setStatus(stringValue(body.get("status"), "待收货"));
+        if (body.containsKey("actualQty")) ex.setActualQty(intValue(body.get("actualQty")));
+        if (body.containsKey("signDate")) ex.setSignDate(dateValue(body.get("signDate")));
+        if (body.containsKey("acceptanceNotes")) ex.setAcceptanceNotes(stringValue(body.get("acceptanceNotes"), ""));
+        if (body.containsKey("signer")) ex.setSigner(stringValue(body.get("signer"), ""));
+
+        applyBoardCalculation(ex);
+        PurchaseOrder saved = repo.save(ex);
+        if (!wasReceived && "已收货".equals(saved.getStatus())) {
+            businessService.onPurchaseReceived(saved);
+        }
+        productionOrderService.createOrUpdateFromSignedPurchase(saved);
+
+        return Result.ok(toMap(saved), "收货信息已更新");
     }
 
     @DeleteMapping("/{id}") public Result<?> delete(@PathVariable Long id) { repo.deleteById(id); return Result.ok(null, "删除成功"); }
@@ -225,6 +249,8 @@ public class PurchaseOrderController {
         m.put("signDate", safeString(rs, "sign_date"));
         m.put("actualQty", numberValue(rs, "actual_qty"));
         m.put("actualAmount", numberValue(rs, "actual_amount"));
+        m.put("acceptanceNotes", safeString(rs, "acceptance_notes"));
+        m.put("signer", safeString(rs, "signer"));
         return m;
     }
 
@@ -278,6 +304,7 @@ public class PurchaseOrderController {
         m.put("boardUnitPrice", o.getBoardUnitPrice()); m.put("profitRate", o.getProfitRate());
         m.put("boardAmount", o.getBoardAmount()); m.put("signDate", o.getSignDate());
         m.put("actualQty", o.getActualQty()); m.put("actualAmount", o.getActualAmount());
+        m.put("acceptanceNotes", o.getAcceptanceNotes()); m.put("signer", o.getSigner());
         return m;
     }
 
@@ -296,6 +323,25 @@ public class PurchaseOrderController {
 
     private Double displayDiscountRate(Double rate) {
         return rate != null && rate > 0 && rate <= 2 ? rate * 100 : rate;
+    }
+
+    private String stringValue(Object value, String fallback) {
+        return value != null ? String.valueOf(value) : fallback;
+    }
+
+    private Integer intValue(Object value) {
+        if (value instanceof Number number) return number.intValue();
+        if (value == null || String.valueOf(value).isBlank()) return 0;
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private LocalDate dateValue(Object value) {
+        if (value == null || String.valueOf(value).isBlank()) return null;
+        return LocalDate.parse(String.valueOf(value));
     }
 
 }

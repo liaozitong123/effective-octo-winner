@@ -44,7 +44,7 @@ const signFilter = ref('all')
 const unsignedCount = ref(0)
 const unsignedTotalArea = ref(0)
 const signedTotalArea = ref(0)
-const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱']
+const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱', '不用封口']
 const columns = [
   { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'salesOrderNo', label: '销售订单号' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
@@ -59,8 +59,9 @@ const columns = [
   { key: 'materialBasePrice', label: '材质基价' }, { key: 'discountRate', label: '折率(%)' },
   { key: 'boardUnitPrice', label: '纸板平方单价' }, { key: 'profitRate', label: '毛利率(%)' },
   { key: 'boardAmount', label: '纸板金额' },
-  { key: 'signDate', label: '签收日期' }, { key: 'actualQty', label: '实收数量' },
-  { key: 'actualAmount', label: '实收金额' },
+  { key: 'actualQty', label: '实收数量' }, { key: 'actualAmount', label: '实收金额' },
+  { key: 'signDate', label: '签收日期' }, { key: 'acceptanceNotes', label: '验收说明', minWidth: 160 },
+  { key: 'signer', label: '签收人' },
   { key: 'productionStatus', label: '生产备注' },
 ]
 const fields = [
@@ -84,9 +85,6 @@ const fields = [
   { key: 'boardUnitPrice', label: '纸板平方单价', type: 'number' },
   { key: 'profitRate', label: '毛利率(%)', type: 'number', readonly: true },
   { key: 'boardAmount', label: '纸板金额', type: 'number' },
-  { key: 'signDate', label: '签收日期', type: 'date' },
-  { key: 'actualQty', label: '实收数量', type: 'number' },
-  { key: 'actualAmount', label: '实收金额', type: 'number', readonly: true },
   { key: 'productionStatus', label: '生产备注', type: 'select', options: PRODUCTION_STATUS_OPTIONS },
   { key: 'notes', label: '备注', type: 'textarea' },
 ]
