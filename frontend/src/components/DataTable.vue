@@ -27,10 +27,10 @@
         </el-table-column>
         <el-table-column label="操作" :width="actionColumnWidth" fixed="right" align="center">
           <template #default="scope">
-            <el-button size="small" type="primary" link @click="$emit('edit', scope.row)">编辑</el-button>
-            <el-button size="small" type="success" link v-if="showPrint" @click="$emit('print', scope.row)">打印</el-button>
-            <el-button size="small" type="warning" link v-if="showLabelPrint" @click="$emit('label-print', scope.row)">标签</el-button>
-            <el-button size="small" type="danger" link @click="$emit('delete', scope.row)">删除</el-button>
+            <el-button size="small" type="primary" link @click.stop="$emit('edit', scope.row)">编辑</el-button>
+            <el-button size="small" type="success" link v-if="showPrint" @click.stop="$emit('print', scope.row)">打印</el-button>
+            <el-button size="small" type="warning" link v-if="showLabelPrint" @click.stop="$emit('labelPrint', scope.row)">标签</el-button>
+            <el-button size="small" type="danger" link @click.stop="$emit('delete', scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -46,10 +46,10 @@
             </div>
           </div>
           <div class="mobile-actions">
-            <el-button size="small" type="primary" link @click="$emit('edit', row)">编辑</el-button>
-            <el-button size="small" type="success" link v-if="showPrint" @click="$emit('print', row)">打印</el-button>
-            <el-button size="small" type="warning" link v-if="showLabelPrint" @click="$emit('label-print', row)">标签</el-button>
-            <el-button size="small" type="danger" link @click="$emit('delete', row)">删除</el-button>
+            <el-button size="small" type="primary" link @click.stop="$emit('edit', row)">编辑</el-button>
+            <el-button size="small" type="success" link v-if="showPrint" @click.stop="$emit('print', row)">打印</el-button>
+            <el-button size="small" type="warning" link v-if="showLabelPrint" @click.stop="$emit('labelPrint', row)">标签</el-button>
+            <el-button size="small" type="danger" link @click.stop="$emit('delete', row)">删除</el-button>
           </div>
         </div>
       </div>
@@ -86,7 +86,7 @@ const props = defineProps({
   tableMaxHeight: { type: [String, Number], default: 'calc(100vh - 232px)' },
 })
 
-const emit = defineEmits(['add', 'edit', 'delete', 'print', 'label-print'])
+const emit = defineEmits(['add', 'edit', 'delete', 'print', 'labelPrint'])
 
 const tableData = ref([])
 const loading = ref(false)
