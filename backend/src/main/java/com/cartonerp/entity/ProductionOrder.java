@@ -64,7 +64,8 @@ public class ProductionOrder {
     private LocalDate finishDate;
     @Column(length = 60) private String workshop;
     @Column(name = "production_operator", length = 60) private String operator;
-    @Column(columnDefinition = "TEXT") private String notes;
+    @Lob
+    @Column(columnDefinition = "LONGTEXT") private String notes;
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public ProductionOrder() {}
