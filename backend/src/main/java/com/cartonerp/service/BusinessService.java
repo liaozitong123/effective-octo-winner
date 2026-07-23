@@ -38,9 +38,11 @@ public class BusinessService {
     @Transactional
     public void onPurchaseReceived(PurchaseOrder po) {
         if (!"已收货".equals(po.getStatus())) return;
+        String materialName = po.getMaterialName() != null ? po.getMaterialName() : "";
+        String spec = po.getSpec() != null ? po.getSpec() : "";
         Optional<Inventory> opt = inventoryRepo.findAll().stream()
-            .filter(i -> i.getItemName().equals(po.getMaterialName())
-                && i.getSpec() != null && i.getSpec().equals(po.getSpec() != null ? po.getSpec() : i.getSpec()))
+            .filter(i -> Objects.equals(i.getItemName(), materialName)
+                && Objects.equals(i.getSpec() != null ? i.getSpec() : "", spec))
             .findFirst();
         if (opt.isPresent()) {
             Inventory inv = opt.get();
@@ -50,8 +52,8 @@ public class BusinessService {
         } else {
             Inventory inv = new Inventory();
             inv.setItemType(po.getMaterialType());
-            inv.setItemName(po.getMaterialName());
-            inv.setSpec(po.getSpec());
+            inv.setItemName(materialName);
+            inv.setSpec(spec);
             inv.setQty(po.getQty() != null ? po.getQty() : 0);
             inv.setUnit(po.getUnit() != null ? po.getUnit() : "");
             inv.setUpdatedAt(LocalDateTime.now());

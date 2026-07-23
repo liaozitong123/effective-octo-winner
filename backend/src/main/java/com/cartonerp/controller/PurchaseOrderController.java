@@ -243,8 +243,10 @@ public class PurchaseOrderController {
         m.put("totalArea", numberValue(rs, "total_area"));
         m.put("materialBasePrice", numberValue(rs, "material_base_price"));
         m.put("discountRate", displayDiscountRate(doubleValue(rs, "discount_rate")));
-        m.put("boardUnitPrice", numberValue(rs, "board_unit_price"));
-        m.put("profitRate", numberValue(rs, "profit_rate"));
+        Number unitPrice = numberValue(rs, "unit_price");
+        Number boardUnitPrice = numberValue(rs, "board_unit_price");
+        m.put("boardUnitPrice", boardUnitPrice);
+        m.put("profitRate", displayProfitRate(numberValue(rs, "profit_rate"), unitPrice, boardUnitPrice));
         m.put("boardAmount", numberValue(rs, "board_amount"));
         m.put("signDate", safeString(rs, "sign_date"));
         m.put("actualQty", numberValue(rs, "actual_qty"));
@@ -301,7 +303,7 @@ public class PurchaseOrderController {
         m.put("cutCount", o.getCutCount()); m.put("crease", o.getCrease());
         m.put("boardArea", o.getBoardArea()); m.put("totalArea", o.getTotalArea());
         m.put("materialBasePrice", o.getMaterialBasePrice()); m.put("discountRate", displayDiscountRate(o.getDiscountRate()));
-        m.put("boardUnitPrice", o.getBoardUnitPrice()); m.put("profitRate", o.getProfitRate());
+        m.put("boardUnitPrice", o.getBoardUnitPrice()); m.put("profitRate", displayProfitRate(o.getProfitRate(), o.getUnitPrice(), o.getBoardUnitPrice()));
         m.put("boardAmount", o.getBoardAmount()); m.put("signDate", o.getSignDate());
         m.put("actualQty", o.getActualQty()); m.put("actualAmount", o.getActualAmount());
         m.put("acceptanceNotes", o.getAcceptanceNotes()); m.put("signer", o.getSigner());
@@ -325,6 +327,15 @@ public class PurchaseOrderController {
         return rate != null && rate > 0 && rate <= 2 ? rate * 100 : rate;
     }
 
+    private Double displayProfitRate(Number storedRate, Number unitPrice, Number boardUnitPrice) {
+        double customerPrice = unitPrice != null ? unitPrice.doubleValue() : 0.0;
+        double boardPrice = boardUnitPrice != null ? boardUnitPrice.doubleValue() : 0.0;
+        if (customerPrice > 0) {
+            return Math.round((customerPrice - boardPrice) / customerPrice * 10000.0) / 100.0;
+        }
+        return storedRate != null ? storedRate.doubleValue() : null;
+    }
+
     private String stringValue(Object value, String fallback) {
         return value != null ? String.valueOf(value) : fallback;
     }
@@ -335,13 +346,20 @@ public class PurchaseOrderController {
         try {
             return Integer.parseInt(String.valueOf(value));
         } catch (NumberFormatException e) {
-            return 0;
+            try {
+                return (int) Math.round(Double.parseDouble(String.valueOf(value)));
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
         }
     }
 
     private LocalDate dateValue(Object value) {
         if (value == null || String.valueOf(value).isBlank()) return null;
-        return LocalDate.parse(String.valueOf(value));
+        String text = String.valueOf(value).trim();
+        int timeSeparator = text.indexOf('T');
+        if (timeSeparator > 0) text = text.substring(0, timeSeparator);
+        return LocalDate.parse(text);
     }
 
 }

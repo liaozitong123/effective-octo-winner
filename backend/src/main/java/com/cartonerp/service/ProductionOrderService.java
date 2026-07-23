@@ -20,7 +20,7 @@ public class ProductionOrderService {
 
     @Transactional
     public void createOrUpdateFromSignedPurchase(PurchaseOrder purchaseOrder) {
-        if (purchaseOrder == null || purchaseOrder.getId() == null || purchaseOrder.getSignDate() == null) return;
+        if (purchaseOrder == null || purchaseOrder.getId() == null || !shouldSyncToProduction(purchaseOrder)) return;
 
         ProductionOrder productionOrder = findExistingProductionOrder(purchaseOrder)
             .orElseGet(() -> {
@@ -32,6 +32,10 @@ public class ProductionOrderService {
 
         copyPurchaseFields(purchaseOrder, productionOrder);
         productionOrderRepo.save(productionOrder);
+    }
+
+    private boolean shouldSyncToProduction(PurchaseOrder purchaseOrder) {
+        return purchaseOrder.getSignDate() != null || "已收货".equals(purchaseOrder.getStatus());
     }
 
     private Optional<ProductionOrder> findExistingProductionOrder(PurchaseOrder purchaseOrder) {

@@ -13,6 +13,9 @@
       <template #status="{ row }">
         <el-tag :type="statusTagType(row.status)" size="small">{{ row.status || '待收货' }}</el-tag>
       </template>
+      <template #profitRate="{ row }">
+        <span>{{ displayProfitRate(row) }}</span>
+      </template>
     </DataTable>
   </div>
   <FormDialog
@@ -57,7 +60,7 @@ const columns = [
   { key: 'materialBasePrice', label: '材质基价', minWidth: 110 },
   { key: 'discountRate', label: '折率%', minWidth: 90 },
   { key: 'boardUnitPrice', label: '纸板平方单价', minWidth: 130 },
-  { key: 'profitRate', label: '毛利率%', minWidth: 100 },
+  { key: 'profitRate', label: '毛利率%', slot: 'profitRate', minWidth: 100 },
   { key: 'boardAmount', label: '纸板金额', minWidth: 110 },
   { key: 'actualQty', label: '实收数量', minWidth: 100 },
   { key: 'actualAmount', label: '实收金额', minWidth: 110 },
@@ -100,6 +103,25 @@ function statusTagType(status) {
   return 'warning'
 }
 
+function hasValue(value) {
+  return value !== '' && value !== null && value !== undefined
+}
+
+function round(value, digits = 2) {
+  const base = 10 ** digits
+  return Math.round((value + Number.EPSILON) * base) / base
+}
+
+function displayProfitRate(row) {
+  if (hasValue(row.profitRate)) return `${row.profitRate}%`
+  const unitPrice = Number(row.unitPrice)
+  const boardUnitPrice = Number(row.boardUnitPrice)
+  if (Number.isFinite(unitPrice) && unitPrice > 0 && Number.isFinite(boardUnitPrice)) {
+    return `${round((unitPrice - boardUnitPrice) / unitPrice * 100)}%`
+  }
+  return '-'
+}
+
 function fetchData(params) {
   return purchaseOrdersAPI.list(params)
 }
@@ -110,7 +132,7 @@ function onFormChange(data) {
 
 function openEdit(row) {
   editId.value = row.id
-  editData.value = { ...row }
+  editData.value = applyBoardCalculation({ ...row }, { autoBoardUnitPrice: false })
   dialogVisible.value = true
 }
 
