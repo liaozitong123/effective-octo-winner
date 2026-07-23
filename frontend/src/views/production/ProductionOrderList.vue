@@ -8,7 +8,7 @@
       </el-radio-group>
     </div>
     <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索生产单号/采购单号/客户/供应商..."
-      hideAdd showPrint @edit="openEdit" @delete="handleDelete" @print="handlePrint">
+      hideAdd showPrint showLabelPrint @edit="openEdit" @delete="handleDelete" @print="handlePrint" @label-print="handleLabelPrint">
       <template #printStatus="{ row }">
         <span :class="['print-status', row.printed ? 'is-printed' : 'is-unprinted']">
           {{ row.printStatus || (row.printed ? '已打印' : '未打印') }}
@@ -95,6 +95,7 @@ function toApiData(form) { return { operator: form.operator || '' } }
 function fetchData(p) { return productionOrdersAPI.list({ ...p, printStatus: printFilter.value }) }
 function openEdit(row) { editId.value = row.id; editData.value = { ...row }; dialogVisible.value = true }
 function handlePrint(row) { router.push(`/production/orders/print?id=${row.id}`) }
+function handleLabelPrint(row) { router.push(`/production/orders/label?id=${row.id}`) }
 function applyPrintFilter() { tableRef.value?.doSearch() }
 async function handleDelete(row) {
   await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })

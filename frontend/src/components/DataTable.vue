@@ -25,10 +25,11 @@
             <slot :name="col.slot" :row="scope.row" :value="scope.row[col.key]" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" :width="showPrint ? 200 : 128" fixed="right" align="center">
+        <el-table-column label="操作" :width="actionColumnWidth" fixed="right" align="center">
           <template #default="scope">
             <el-button size="small" type="primary" link @click="$emit('edit', scope.row)">编辑</el-button>
             <el-button size="small" type="success" link v-if="showPrint" @click="$emit('print', scope.row)">打印</el-button>
+            <el-button size="small" type="warning" link v-if="showLabelPrint" @click="$emit('label-print', scope.row)">标签</el-button>
             <el-button size="small" type="danger" link @click="$emit('delete', scope.row)">删除</el-button>
           </template>
         </el-table-column>
@@ -47,6 +48,7 @@
           <div class="mobile-actions">
             <el-button size="small" type="primary" link @click="$emit('edit', row)">编辑</el-button>
             <el-button size="small" type="success" link v-if="showPrint" @click="$emit('print', row)">打印</el-button>
+            <el-button size="small" type="warning" link v-if="showLabelPrint" @click="$emit('label-print', row)">标签</el-button>
             <el-button size="small" type="danger" link @click="$emit('delete', row)">删除</el-button>
           </div>
         </div>
@@ -79,11 +81,12 @@ const props = defineProps({
   searchPlaceholder: { type: String, default: '搜索...' },
   searchFields: Array,
   showPrint: { type: Boolean, default: false },
+  showLabelPrint: { type: Boolean, default: false },
   hideAdd: { type: Boolean, default: false },
   tableMaxHeight: { type: [String, Number], default: 'calc(100vh - 232px)' },
 })
 
-const emit = defineEmits(['add', 'edit', 'delete', 'print'])
+const emit = defineEmits(['add', 'edit', 'delete', 'print', 'label-print'])
 
 const tableData = ref([])
 const loading = ref(false)
@@ -93,6 +96,11 @@ const pageSize = ref(20)
 const total = ref(0)
 const defaultColumnWidth = 118
 const mobileColumns = computed(() => props.columns.filter(col => col.key !== 'id').slice(0, 4))
+const actionColumnWidth = computed(() => {
+  if (props.showPrint && props.showLabelPrint) return 236
+  if (props.showPrint || props.showLabelPrint) return 200
+  return 128
+})
 
 function formatDisplayValue(value) {
   if (value === null || value === undefined || value === '') return '-'

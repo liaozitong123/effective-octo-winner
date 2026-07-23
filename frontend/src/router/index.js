@@ -14,6 +14,7 @@ const routes = [
       { path: 'sales/delivery', name: 'DeliverySchedule', component: () => import('../views/sales/DeliverySchedule.vue') },
       { path: 'production/orders', name: 'ProductionOrders', component: () => import('../views/production/ProductionOrderList.vue') },
       { path: 'production/orders/print', name: 'ProductionOrderPrint', component: () => import('../views/production/ProductionOrderPrint.vue') },
+      { path: 'production/orders/label', name: 'ProductionOrderLabelPrint', component: () => import('../views/production/ProductionOrderLabelPrint.vue') },
       { path: 'production/records', name: 'ProductionRecords', component: () => import('../views/production/ProductionRecordList.vue') },
       { path: 'production/progress', name: 'ProductionProgress', component: () => import('../views/production/ProductionProgress.vue') },
       { path: 'production/qrcode', name: 'QRCodePage', component: () => import('../views/production/QRCodePage.vue') },
