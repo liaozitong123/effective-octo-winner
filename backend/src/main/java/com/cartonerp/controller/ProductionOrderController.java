@@ -6,6 +6,7 @@ import com.cartonerp.entity.ProductionRecord;
 import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.*;
+import com.cartonerp.service.ProductionOrderService;
 import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.JoinType;
@@ -23,12 +24,14 @@ public class ProductionOrderController {
     @Autowired private ProductionOrderRepository repo;
     @Autowired private SalesOrderRepository salesOrderRepo;
     @Autowired private ProductionRecordRepository recordRepo;
+    @Autowired private ProductionOrderService productionOrderService;
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
                                                    @RequestParam(defaultValue = "all") String printStatus,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
+        productionOrderService.syncReceivedPurchasesWithoutProduction();
         Specification<ProductionOrder> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (q != null && !q.isBlank()) {

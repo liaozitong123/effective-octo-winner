@@ -30,7 +30,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
 import { purchaseOrdersAPI } from '../../api/purchase'
@@ -152,7 +152,13 @@ async function handleSubmit(form) {
     acceptanceNotes: calculated.acceptanceNotes || '',
     signer: calculated.signer || '',
   }
-  await purchaseOrdersAPI.updateReceipt(editId.value, data)
+  const res = await purchaseOrdersAPI.updateReceipt(editId.value, data)
+  const message = res.data?.message || '收货信息已更新'
+  if (message.includes('未完全完成')) {
+    ElMessage.warning(message)
+  } else {
+    ElMessage.success(message)
+  }
   tableRef.value.loadData()
 }
 </script>

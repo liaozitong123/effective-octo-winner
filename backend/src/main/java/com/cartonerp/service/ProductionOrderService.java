@@ -5,18 +5,19 @@ import com.cartonerp.entity.ProductionOrder;
 import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.ProductionOrderRepository;
+import com.cartonerp.repository.PurchaseOrderRepository;
 import com.cartonerp.util.OrderNumberUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class ProductionOrderService {
     @Autowired private ProductionOrderRepository productionOrderRepo;
+    @Autowired private PurchaseOrderRepository purchaseOrderRepo;
 
     @Transactional
     public void createOrUpdateFromSignedPurchase(PurchaseOrder purchaseOrder) {
@@ -34,6 +35,19 @@ public class ProductionOrderService {
         productionOrderRepo.save(productionOrder);
     }
 
+    public int syncReceivedPurchasesWithoutProduction() {
+        int synced = 0;
+        for (PurchaseOrder purchaseOrder : purchaseOrderRepo.findReceivedWithoutProductionOrder()) {
+            try {
+                createOrUpdateFromSignedPurchase(purchaseOrder);
+                synced++;
+            } catch (RuntimeException e) {
+                e.printStackTrace();
+            }
+        }
+        return synced;
+    }
+
     private boolean shouldSyncToProduction(PurchaseOrder purchaseOrder) {
         if ("已退货".equals(purchaseOrder.getStatus())) return false;
         return purchaseOrder.getSignDate() != null || "已收货".equals(purchaseOrder.getStatus());
@@ -42,18 +56,7 @@ public class ProductionOrderService {
     private Optional<ProductionOrder> findExistingProductionOrder(PurchaseOrder purchaseOrder) {
         List<ProductionOrder> linkedOrders = productionOrderRepo.findByPurchaseOrderId(purchaseOrder.getId());
         if (!linkedOrders.isEmpty()) return Optional.of(linkedOrders.get(0));
-
-        SalesOrder salesOrder = purchaseOrder.getSalesOrder();
-        if (salesOrder == null || salesOrder.getId() == null) return Optional.empty();
-
-        return productionOrderRepo.findBySalesOrderId(salesOrder.getId()).stream()
-            .filter(po -> po.getPurchaseOrder() == null)
-            .filter(po -> sameValue(po.getProductName(), firstNonBlank(purchaseOrder.getProductName(), purchaseOrder.getMaterialName())))
-            .filter(po -> sameValue(po.getSpec(), purchaseOrder.getSpec()))
-            .filter(po -> sameValue(po.getMaterial(), purchaseOrder.getMaterial()))
-            .filter(po -> sameValue(po.getBoxType(), purchaseOrder.getBoxType()))
-            .filter(po -> sameValue(po.getStitchType(), purchaseOrder.getStitchType()))
-            .findFirst();
+        return Optional.empty();
     }
 
     private void copyPurchaseFields(PurchaseOrder source, ProductionOrder target) {
@@ -102,14 +105,6 @@ public class ProductionOrderService {
         if (purchaseOrder.getCustomer() != null) return purchaseOrder.getCustomer();
         SalesOrder salesOrder = purchaseOrder.getSalesOrder();
         return salesOrder != null ? salesOrder.getCustomer() : null;
-    }
-
-    private boolean sameValue(String a, String b) {
-        return Objects.equals(normalize(a), normalize(b));
-    }
-
-    private String normalize(String value) {
-        return value == null || value.isBlank() ? "" : value.trim();
     }
 
     private String firstNonBlank(String... values) {
