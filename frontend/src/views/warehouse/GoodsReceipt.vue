@@ -87,7 +87,7 @@ const fields = [
   { key: 'materialBasePrice', label: '材质基价', type: 'display' },
   { key: 'discountRate', label: '折率%', type: 'display' },
   { key: 'boardUnitPrice', label: '纸板平方单价', type: 'display' },
-  { key: 'profitRate', label: '毛利率%', type: 'display' },
+  { key: 'profitRate', label: '毛利率%', type: 'display', suffix: '%' },
   { key: 'boardAmount', label: '纸板金额', type: 'display' },
   { key: 'status', label: '收货状态', type: 'select', options: ['待收货', '已收货', '已退货'] },
   { key: 'actualQty', label: '实收数量', type: 'number' },
@@ -127,7 +127,7 @@ function fetchData(params) {
 }
 
 function onFormChange(data) {
-  return applyBoardCalculation(data, { autoBoardUnitPrice: false })
+  return applyBoardCalculation({ ...editData.value, ...data }, { autoBoardUnitPrice: false })
 }
 
 function openEdit(row) {
@@ -143,7 +143,7 @@ async function handleDelete(row) {
 }
 
 async function handleSubmit(form) {
-  const calculated = applyBoardCalculation(form, { autoBoardUnitPrice: false })
+  const calculated = applyBoardCalculation({ ...editData.value, ...form }, { autoBoardUnitPrice: false })
   const data = {
     status: calculated.status || '待收货',
     actualQty: calculated.actualQty === '' ? 0 : Number(calculated.actualQty),

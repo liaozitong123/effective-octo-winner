@@ -16,7 +16,7 @@
         :prop="field.key"
         :class="fieldClass(field)"
       >
-        <span v-if="field.type === 'display'" class="display-value">{{ displayText(form[field.key]) }}</span>
+        <span v-if="field.type === 'display'" class="display-value">{{ displayText(form[field.key], field) }}</span>
         <div v-else-if="!field.type || field.type === 'text' || field.type === 'number'" :class="['input-line', { 'has-hint': field.hintKey }]">
           <el-input
             v-model="form[field.key]"
@@ -91,8 +91,9 @@ const lastChangedKey = ref('')
 const imageInputRefs = {}
 const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth']
 
-function displayText(value) {
-  return value !== '' && value !== null && value !== undefined ? value : '-'
+function displayText(value, field = {}) {
+  if (value === '' || value === null || value === undefined) return '-'
+  return field.suffix ? `${value}${field.suffix}` : value
 }
 
 function markChanged(key) {

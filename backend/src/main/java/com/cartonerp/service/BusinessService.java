@@ -38,7 +38,8 @@ public class BusinessService {
     @Transactional
     public void onPurchaseReceived(PurchaseOrder po) {
         if (!"已收货".equals(po.getStatus())) return;
-        String materialName = po.getMaterialName() != null ? po.getMaterialName() : "";
+        String materialType = firstNonBlank(po.getMaterialType(), "纸板");
+        String materialName = firstNonBlank(po.getMaterialName(), po.getProductName(), po.getOrderNo(), "未命名物料");
         String spec = po.getSpec() != null ? po.getSpec() : "";
         Optional<Inventory> opt = inventoryRepo.findAll().stream()
             .filter(i -> Objects.equals(i.getItemName(), materialName)
@@ -51,7 +52,7 @@ public class BusinessService {
             inventoryRepo.save(inv);
         } else {
             Inventory inv = new Inventory();
-            inv.setItemType(po.getMaterialType());
+            inv.setItemType(materialType);
             inv.setItemName(materialName);
             inv.setSpec(spec);
             inv.setQty(po.getQty() != null ? po.getQty() : 0);
@@ -59,6 +60,13 @@ public class BusinessService {
             inv.setUpdatedAt(LocalDateTime.now());
             inventoryRepo.save(inv);
         }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value;
+        }
+        return "";
     }
 
     /**

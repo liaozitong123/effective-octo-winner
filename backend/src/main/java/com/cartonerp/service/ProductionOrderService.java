@@ -42,9 +42,11 @@ public class ProductionOrderService {
         List<ProductionOrder> linkedOrders = productionOrderRepo.findByPurchaseOrderId(purchaseOrder.getId());
         if (!linkedOrders.isEmpty()) return Optional.of(linkedOrders.get(0));
 
-        return productionOrderRepo.findAll().stream()
+        SalesOrder salesOrder = purchaseOrder.getSalesOrder();
+        if (salesOrder == null || salesOrder.getId() == null) return Optional.empty();
+
+        return productionOrderRepo.findBySalesOrderId(salesOrder.getId()).stream()
             .filter(po -> po.getPurchaseOrder() == null)
-            .filter(po -> sameSalesOrder(po, purchaseOrder))
             .filter(po -> sameValue(po.getProductName(), firstNonBlank(purchaseOrder.getProductName(), purchaseOrder.getMaterialName())))
             .filter(po -> sameValue(po.getSpec(), purchaseOrder.getSpec()))
             .filter(po -> sameValue(po.getMaterial(), purchaseOrder.getMaterial()))
@@ -99,12 +101,6 @@ public class ProductionOrderService {
         if (purchaseOrder.getCustomer() != null) return purchaseOrder.getCustomer();
         SalesOrder salesOrder = purchaseOrder.getSalesOrder();
         return salesOrder != null ? salesOrder.getCustomer() : null;
-    }
-
-    private boolean sameSalesOrder(ProductionOrder productionOrder, PurchaseOrder purchaseOrder) {
-        Long productionSalesId = productionOrder.getSalesOrder() != null ? productionOrder.getSalesOrder().getId() : null;
-        Long purchaseSalesId = purchaseOrder.getSalesOrder() != null ? purchaseOrder.getSalesOrder().getId() : null;
-        return purchaseSalesId != null && Objects.equals(productionSalesId, purchaseSalesId);
     }
 
     private boolean sameValue(String a, String b) {

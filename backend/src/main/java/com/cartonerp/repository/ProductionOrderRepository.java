@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ProductionOrderRepository extends JpaRepository<ProductionOrder, Long>, JpaSpecificationExecutor<ProductionOrder> {
     List<ProductionOrder> findByPurchaseOrderId(Long purchaseOrderId);
+    List<ProductionOrder> findBySalesOrderId(Long salesOrderId);
 }
