@@ -96,7 +96,7 @@ function fetchData(p) { return productionOrdersAPI.list({ ...p, printStatus: pri
 function openEdit(row) { editId.value = row.id; editData.value = { ...row }; dialogVisible.value = true }
 function handlePrint(row) { router.push(`/production/orders/print?id=${row.id}`) }
 function handleLabelPrint(row) {
-  router.push({ name: 'ProductionOrderLabelPrint', query: { id: row.id } })
+  router.push({ name: 'ProductionOrderLabelPrint', query: { id: row.id, autoPrint: '1' } })
 }
 function applyPrintFilter() { tableRef.value?.doSearch() }
 async function handleDelete(row) {

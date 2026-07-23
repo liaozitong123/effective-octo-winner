@@ -1,7 +1,7 @@
 <template>
   <div class="label-print-page">
     <div class="label-actions no-print">
-      <el-button type="primary" @click="window.print()">打印标签</el-button>
+      <el-button type="primary" @click="printLabel">打印标签</el-button>
       <el-button @click="router.back()">返回</el-button>
     </div>
 
@@ -39,7 +39,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive } from 'vue'
+import { nextTick, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productionOrdersAPI } from '../../api/production'
 
@@ -51,11 +51,22 @@ function value(v) {
   return v !== null && v !== undefined && v !== '' ? v : ''
 }
 
+function printLabel() {
+  window.print()
+}
+
+async function autoPrintIfNeeded() {
+  if (route.query.autoPrint !== '1') return
+  await nextTick()
+  window.setTimeout(printLabel, 300)
+}
+
 onMounted(async () => {
   const id = route.query.id
   if (!id) return
   const res = await productionOrdersAPI.get(id)
   Object.assign(order, res.data?.data || {})
+  autoPrintIfNeeded()
 })
 </script>
 
