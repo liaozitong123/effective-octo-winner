@@ -35,6 +35,20 @@ const router = createRouter({
   routes
 })
 
+router.onError((error, to) => {
+  const message = String(error?.message || error || '')
+  const isChunkLoadError = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Loading chunk/i.test(message)
+  if (!isChunkLoadError) return
+
+  const reloadKey = `erp:chunk-reload:${to.fullPath}`
+  if (sessionStorage.getItem(reloadKey) === '1') {
+    sessionStorage.removeItem(reloadKey)
+    return
+  }
+  sessionStorage.setItem(reloadKey, '1')
+  window.location.assign(to.fullPath)
+})
+
 const publicPaths = ['/login', '/production/report']
 
 router.beforeEach(async (to) => {
