@@ -94,10 +94,10 @@ onMounted(async () => {
   height: 80mm;
   box-sizing: border-box;
   margin: 0 auto;
-  padding: 7mm 8mm 6mm;
+  padding: 5mm 8mm;
   display: flex;
   flex-direction: column;
-  gap: 3.4mm;
+  gap: 2.1mm;
   background: #fff;
   color: #111827;
   border: 1px solid #111827;
@@ -106,9 +106,9 @@ onMounted(async () => {
 }
 
 .label-sheet h1 {
-  margin: 0 0 1mm;
+  margin: 0 0 .4mm;
   text-align: center;
-  font-size: 25px;
+  font-size: 23px;
   line-height: 1;
   letter-spacing: 0;
 }
@@ -118,8 +118,8 @@ onMounted(async () => {
   grid-template-columns: 25mm minmax(0, 1fr);
   align-items: end;
   gap: 1mm;
-  min-height: 7.6mm;
-  font-size: 17px;
+  min-height: 6.8mm;
+  font-size: 16px;
   line-height: 1.15;
 }
 
@@ -129,13 +129,13 @@ onMounted(async () => {
 }
 
 .label-row strong {
-  min-height: 7mm;
-  padding: 0 .8mm .8mm;
+  min-height: 6.2mm;
+  padding: 0 .8mm .5mm;
   border-bottom: 1.5px solid #111827;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -164,7 +164,7 @@ onMounted(async () => {
     width: 100%;
     height: 72mm;
     margin: 0;
-    padding: 1mm 2mm 0;
+    padding: 1mm 2mm;
     border: none;
     box-shadow: none;
     print-color-adjust: exact;
