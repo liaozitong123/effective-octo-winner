@@ -4,6 +4,7 @@ import com.cartonerp.common.Result;
 import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.repository.*;
 import com.cartonerp.service.ProductionOrderService;
+import com.cartonerp.service.ProductionRecordService;
 import com.cartonerp.util.BoardCalculationUtil;
 import com.cartonerp.util.OrderNumberUtil;
 import jakarta.persistence.criteria.JoinType;
@@ -26,6 +27,7 @@ public class PurchaseOrderController {
     @Autowired private SalesOrderRepository salesOrderRepo;
     @Autowired private com.cartonerp.service.BusinessService businessService;
     @Autowired private ProductionOrderService productionOrderService;
+    @Autowired private ProductionRecordService productionRecordService;
     @Autowired private JdbcTemplate jdbcTemplate;
 
     @GetMapping
@@ -104,6 +106,7 @@ public class PurchaseOrderController {
         PurchaseOrder saved = repo.save(o);
         businessService.onPurchaseReceived(saved);
         productionOrderService.createOrUpdateFromSignedPurchase(saved);
+        productionRecordService.ensureForReceivedPurchase(saved);
 
         return Result.ok(toMap(saved), "创建成功");
     }
@@ -158,6 +161,7 @@ public class PurchaseOrderController {
             businessService.onPurchaseReceived(saved);
         }
         productionOrderService.createOrUpdateFromSignedPurchase(saved);
+        productionRecordService.ensureForReceivedPurchase(saved);
 
         return Result.ok(toMap(saved), "更新成功");
     }
@@ -377,6 +381,12 @@ public class PurchaseOrderController {
             productionOrderService.createOrUpdateFromSignedPurchase(saved);
         } catch (RuntimeException e) {
             warnings.add("生产单同步失败");
+            e.printStackTrace();
+        }
+        try {
+            productionRecordService.ensureForReceivedPurchase(saved);
+        } catch (RuntimeException e) {
+            warnings.add("产量登记同步失败");
             e.printStackTrace();
         }
         return warnings;

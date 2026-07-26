@@ -29,7 +29,7 @@ const FLUTE_TYPE_OPTIONS = ['BC', 'EBC', 'EB', 'E', 'B', 'C']
 const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱', '不用封口']
 
 const columns = [
-  { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '下单日期' },
+  { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '接单日期' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
   { key: 'spec', label: '规格(cm)' }, { key: 'material', label: '客户材质' },
   { key: 'boxType', label: '盒式' }, { key: 'fluteType', label: '楞别' }, { key: 'singleArea', label: '单个面积' }, { key: 'qty', label: '下单数量' },
