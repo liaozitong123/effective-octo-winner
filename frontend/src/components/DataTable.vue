@@ -25,7 +25,7 @@
             <slot :name="col.slot" :row="scope.row" :value="scope.row[col.key]" />
           </template>
         </el-table-column>
-        <el-table-column label="操作" :width="actionColumnWidth" fixed="right" align="center">
+        <el-table-column v-if="!hideActions" label="操作" :width="actionColumnWidth" fixed="right" align="center">
           <template #default="scope">
             <el-button size="small" type="primary" link @click.stop="$emit('edit', scope.row)">编辑</el-button>
             <el-button size="small" type="success" link v-if="showPrint" @click.stop="$emit('print', scope.row)">打印</el-button>
@@ -45,7 +45,7 @@
               <strong>{{ formatDisplayValue(row[col.key]) }}</strong>
             </div>
           </div>
-          <div class="mobile-actions">
+          <div v-if="!hideActions" class="mobile-actions">
             <el-button size="small" type="primary" link @click.stop="$emit('edit', row)">编辑</el-button>
             <el-button size="small" type="success" link v-if="showPrint" @click.stop="$emit('print', row)">打印</el-button>
             <el-button size="small" type="warning" link v-if="showLabelPrint" @click.stop="$emit('labelPrint', row)">标签</el-button>
@@ -83,6 +83,7 @@ const props = defineProps({
   showPrint: { type: Boolean, default: false },
   showLabelPrint: { type: Boolean, default: false },
   hideAdd: { type: Boolean, default: false },
+  hideActions: { type: Boolean, default: false },
   tableMaxHeight: { type: [String, Number], default: 'calc(100vh - 232px)' },
 })
 

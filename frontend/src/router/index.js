@@ -11,7 +11,6 @@ const routes = [
       { path: 'dashboard', name: 'Dashboard', component: () => import('../views/Dashboard.vue') },
       { path: 'sales/customers', name: 'Customers', component: () => import('../views/sales/CustomerList.vue') },
       { path: 'sales/orders', name: 'SalesOrders', component: () => import('../views/sales/SalesOrderList.vue') },
-      { path: 'sales/delivery', name: 'DeliverySchedule', component: () => import('../views/sales/DeliverySchedule.vue') },
       { path: 'production/orders', name: 'ProductionOrders', component: () => import('../views/production/ProductionOrderList.vue') },
       { path: 'production/orders/print', name: 'ProductionOrderPrint', component: () => import('../views/production/ProductionOrderPrint.vue') },
       { path: 'production/orders/label', name: 'ProductionOrderLabelPrint', component: () => import('../views/production/ProductionOrderLabelPrint.vue') },

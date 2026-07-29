@@ -45,7 +45,7 @@ const columns = [
   { key: 'fluteType', label: '楞别', minWidth: 90 },
   { key: 'singleArea', label: '单个面积', minWidth: 110 },
   { key: 'inboundAmount', label: '入库金额', minWidth: 110 },
-  { key: 'inboundQty', label: '入库数量/个', minWidth: 120 },
+  { key: 'inboundQty', label: '入库数量', minWidth: 100 },
   { key: 'inboundDate', label: '入库日期', minWidth: 110 },
   { key: 'nailer', label: '打钉员', minWidth: 100 },
   { key: 'orderDate', label: '下单日期', minWidth: 110 },
@@ -59,7 +59,6 @@ const columns = [
   { key: 'deliveryQty', label: '送货数量', minWidth: 100 },
   { key: 'remainingStock', label: '剩余库存', minWidth: 100 },
   { key: 'deliveryDate', label: '送货日期', minWidth: 110 },
-  { key: 'driver', label: '司机', minWidth: 90 },
 ]
 
 const fields = [
@@ -75,7 +74,7 @@ const fields = [
   { key: 'fluteType', label: '楞别', type: 'display' },
   { key: 'singleArea', label: '单个面积', type: 'display' },
   { key: 'inboundAmount', label: '入库金额', type: 'display' },
-  { key: 'inboundQty', label: '入库数量/个', type: 'number' },
+  { key: 'inboundQty', label: '入库数量', type: 'number' },
   { key: 'inboundDate', label: '入库日期', type: 'date' },
   { key: 'nailer', label: '打钉员' },
   { key: 'orderDate', label: '下单日期', type: 'display' },
@@ -87,9 +86,8 @@ const fields = [
   { key: 'operator', label: '生产员' },
   { key: 'productionDate', label: '生产日期', type: 'date' },
   { key: 'deliveryQty', label: '送货数量', type: 'number' },
-  { key: 'remainingStock', label: '剩余库存', type: 'number' },
+  { key: 'remainingStock', label: '剩余库存', type: 'display' },
   { key: 'deliveryDate', label: '送货日期', type: 'date' },
-  { key: 'driver', label: '司机' },
 ]
 
 function numberValue(value) {
@@ -101,12 +99,17 @@ function calcInboundAmount(data) {
   return Math.round(numberValue(data.customerUnitPrice) * numberValue(data.singleArea) * numberValue(data.inboundQty) * 100) / 100
 }
 
+function calcRemainingStock(data) {
+  return numberValue(data.inboundQty) - numberValue(data.deliveryQty)
+}
+
 function onFormChange(data) {
-  return { ...data, inboundAmount: calcInboundAmount(data) }
+  return { ...data, inboundAmount: calcInboundAmount(data), remainingStock: calcRemainingStock(data) }
 }
 
 function toApiData(form) {
   const inboundQty = numberValue(form.inboundQty)
+  const deliveryQty = numberValue(form.deliveryQty)
   return {
     productionOrder: form.productionOrderId ? { id: Number(form.productionOrderId) } : null,
     outputQty: inboundQty,
@@ -114,10 +117,9 @@ function toApiData(form) {
     nailer: form.nailer || '',
     operator: form.operator || '',
     productionDate: form.productionDate || null,
-    deliveryQty: numberValue(form.deliveryQty),
-    remainingStock: numberValue(form.remainingStock),
+    deliveryQty,
+    remainingStock: inboundQty - deliveryQty,
     deliveryDate: form.deliveryDate || null,
-    driver: form.driver || '',
   }
 }
 
@@ -129,7 +131,12 @@ function openAdd() {
 }
 function openEdit(row) {
   editId.value = row.id
-  editData.value = { ...row, productionOrderId: row.productionOrderId || '', inboundAmount: calcInboundAmount(row) }
+  editData.value = {
+    ...row,
+    productionOrderId: row.productionOrderId || '',
+    inboundAmount: calcInboundAmount(row),
+    remainingStock: calcRemainingStock(row),
+  }
   dialogVisible.value = true
 }
 async function handleDelete(row) {

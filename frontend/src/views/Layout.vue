@@ -23,7 +23,6 @@
             <template #title><el-icon><Sell /></el-icon><span>销售管理</span></template>
             <el-menu-item index="/sales/customers">客户资料</el-menu-item>
             <el-menu-item index="/sales/orders">销售订单</el-menu-item>
-            <el-menu-item index="/sales/delivery">送货排程</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="purchase">
             <template #title><el-icon><ShoppingCart /></el-icon><span>采购管理</span></template>
@@ -40,7 +39,7 @@
           <el-sub-menu index="warehouse">
             <template #title><el-icon><Box /></el-icon><span>仓库管理</span></template>
             <el-menu-item index="/warehouse/receipt">收货/退货</el-menu-item>
-            <el-menu-item index="/warehouse/inventory">库存管理</el-menu-item>
+            <el-menu-item index="/warehouse/inventory">库存汇总</el-menu-item>
             <el-menu-item index="/warehouse/delivery">送货/退货单</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="finance">
@@ -86,9 +85,9 @@ const asideWidth = computed(() => isSidebarCollapsed.value ? '72px' : '232px')
 const pageTitle = computed(() => {
   const m = {
     '/dashboard': '仪表盘', '/sales/customers': '客户资料', '/sales/orders': '销售订单',
-    '/sales/delivery': '送货排程', '/production/orders': '生产单', '/production/records': '产量登记',
+    '/production/orders': '生产单', '/production/records': '产量登记',
     '/production/progress': '生产进度', '/production/qrcode': '加工区二维码', '/purchase/suppliers': '供应商资料', '/purchase/orders': '采购单',
-    '/warehouse/receipt': '收货/退货', '/warehouse/inventory': '库存管理', '/warehouse/delivery': '送货/退货单',
+    '/warehouse/receipt': '收货/退货', '/warehouse/inventory': '库存汇总', '/warehouse/delivery': '送货/退货单',
     '/finance/reconciliation': '对账单', '/finance/payments': '付款/收款单', '/finance/profit': '利润分析',
   }
   return m[route.path] || ''

@@ -36,7 +36,6 @@ public class ProductionRecordController {
             return cb.or(
                 cb.like(root.get("operator"), p),
                 cb.like(root.get("nailer"), p),
-                cb.like(root.get("driver"), p),
                 cb.like(productionOrder.get("orderNo"), p),
                 cb.like(purchaseOrder.get("orderNo"), p),
                 cb.like(salesOrder.get("orderNo"), p),
@@ -53,6 +52,7 @@ public class ProductionRecordController {
     public Result<Map<String, Object>> create(@RequestBody ProductionRecord r) {
         if (r.getProductionOrder() != null && r.getProductionOrder().getId() != null)
             productionOrderRepo.findById(r.getProductionOrder().getId()).ifPresent(r::setProductionOrder);
+        applyStockCalculation(r);
         ProductionRecord saved = repo.save(r);
         businessService.onProductionRecordAdded(saved);
         return Result.ok(toMap(saved), "创建成功");
@@ -74,8 +74,8 @@ public class ProductionRecordController {
         if (r.getDeliveryQty() != null) ex.setDeliveryQty(r.getDeliveryQty());
         if (r.getRemainingStock() != null) ex.setRemainingStock(r.getRemainingStock());
         if (r.getDeliveryDate() != null) ex.setDeliveryDate(r.getDeliveryDate());
-        if (r.getDriver() != null) ex.setDriver(r.getDriver());
         if (r.getNotes() != null) ex.setNotes(r.getNotes());
+        applyStockCalculation(ex);
         ProductionRecord saved = repo.save(ex);
         businessService.onProductionRecordAdded(saved);
         return Result.ok(toMap(saved), "更新成功");
@@ -155,9 +155,8 @@ public class ProductionRecordController {
         m.put("operator", r.getOperator());
         m.put("productionDate", r.getProductionDate());
         m.put("deliveryQty", r.getDeliveryQty());
-        m.put("remainingStock", r.getRemainingStock());
+        m.put("remainingStock", remainingStock(r));
         m.put("deliveryDate", r.getDeliveryDate());
-        m.put("driver", r.getDriver());
         m.put("wasteQty", r.getWasteQty());
         m.put("shift", r.getShift());
         m.put("notes", r.getNotes());
@@ -205,5 +204,15 @@ public class ProductionRecordController {
 
     private double round4(double value) {
         return Math.round(value * 10000.0) / 10000.0;
+    }
+
+    private void applyStockCalculation(ProductionRecord record) {
+        record.setRemainingStock(remainingStock(record));
+    }
+
+    private int remainingStock(ProductionRecord record) {
+        int inboundQty = record.getOutputQty() != null ? record.getOutputQty() : 0;
+        int deliveryQty = record.getDeliveryQty() != null ? record.getDeliveryQty() : 0;
+        return inboundQty - deliveryQty;
     }
 }

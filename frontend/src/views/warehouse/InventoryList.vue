@@ -1,44 +1,62 @@
 <template>
-  <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索库存物品..."
-    @add="openAdd" @edit="openEdit" @delete="handleDelete">
-    <template #itemType="{ row }">
-      <el-tag :type="row.itemType === '成品' ? 'success' : row.itemType === '纸板' ? '' : 'warning'" size="small">{{ row.itemType }}</el-tag>
-    </template>
-    <template #qty="{ row }">
-      <span :style="{ color: row.qty <= row.safetyStock ? '#ef4444' : 'inherit', fontWeight: row.qty <= row.safetyStock ? '700' : '400' }">{{ row.qty }}</span>
+  <DataTable
+    ref="tableRef"
+    :columns="columns"
+    :fetchData="fetchData"
+    search-placeholder="搜索销售单号/客户/产品名称/规格..."
+    table-max-height="calc(100vh - 232px)"
+    hideAdd
+    hideActions
+  >
+    <template #deliveryStatus="{ row }">
+      <span :class="['delivery-status', row.deliveryStatus === '已送货' ? 'is-delivered' : 'is-undelivered']">
+        {{ row.deliveryStatus }}
+      </span>
     </template>
   </DataTable>
-  <FormDialog v-model="dialogVisible" :fields="fields" :isEdit="!!editId" :initialData="editData" :onSubmit="handleSubmit" />
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
-import FormDialog from '../../components/FormDialog.vue'
 import { inventoryAPI } from '../../api/warehouse'
 
-const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
+const tableRef = ref(null)
+
 const columns = [
-  { key: 'id', label: 'ID', width: 60 }, { key: 'itemType', label: '类型', slot: 'itemType' },
-  { key: 'itemName', label: '物品名称' }, { key: 'spec', label: '规格' },
-  { key: 'qty', label: '数量', slot: 'qty' }, { key: 'unit', label: '单位' },
-  { key: 'warehouseLocation', label: '库位' }, { key: 'safetyStock', label: '安全库存' },
+  { key: 'deliveryStatus', label: '送货状态', slot: 'deliveryStatus', width: 92, minWidth: 92 },
+  { key: 'salesOrderNo', label: '销售单号', minWidth: 150 },
+  { key: 'orderDate', label: '下单日期', minWidth: 110 },
+  { key: 'customerName', label: '客户', minWidth: 150 },
+  { key: 'productName', label: '产品名称', minWidth: 140 },
+  { key: 'spec', label: '规格', minWidth: 170 },
+  { key: 'customerUnitPrice', label: '客户平方单价', minWidth: 120 },
+  { key: 'customerMaterial', label: '客户材质', minWidth: 120 },
+  { key: 'fluteType', label: '楞别', minWidth: 90 },
+  { key: 'singleArea', label: '单个面积', minWidth: 110 },
+  { key: 'inboundAmount', label: '入库金额', minWidth: 110 },
+  { key: 'inboundQty', label: '入库数量', minWidth: 100 },
+  { key: 'boxUnitPrice', label: '纸箱单价', minWidth: 110 },
+  { key: 'deliveryQty', label: '送货数量', minWidth: 100 },
+  { key: 'amount', label: '金额', minWidth: 100 },
+  { key: 'remainingStock', label: '剩余库存', minWidth: 100 },
 ]
-const fields = [
-  { key: 'itemType', label: '类型', type: 'select', options: ['成品','纸板','辅料'], required: true },
-  { key: 'itemName', label: '物品名称', required: true }, { key: 'spec', label: '规格' },
-  { key: 'qty', label: '数量', type: 'number', required: true }, { key: 'unit', label: '单位' },
-  { key: 'warehouseLocation', label: '库位' }, { key: 'safetyStock', label: '安全库存', type: 'number' },
-]
-function fetchData(p) { return inventoryAPI.list(p) }
-function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
-function openEdit(row) { editId.value = row.id; editData.value = { ...row }; dialogVisible.value = true }
-async function handleDelete(row) {
-  await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
-  await inventoryAPI.delete(row.id); tableRef.value.loadData()
-}
-async function handleSubmit(form) {
-  editId.value ? await inventoryAPI.update(editId.value, form) : await inventoryAPI.create(form); tableRef.value.loadData()
+
+function fetchData(p) {
+  return inventoryAPI.list(p)
 }
 </script>
+
+<style scoped>
+.delivery-status {
+  font-weight: 800;
+}
+
+.delivery-status.is-delivered {
+  color: #16a34a;
+}
+
+.delivery-status.is-undelivered {
+  color: #dc2626;
+}
+</style>
