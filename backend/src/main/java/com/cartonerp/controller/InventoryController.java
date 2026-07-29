@@ -8,6 +8,7 @@ import com.cartonerp.entity.PurchaseOrder;
 import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.InventoryRepository;
 import com.cartonerp.repository.ProductionRecordRepository;
+import com.cartonerp.service.DeliveryNoteService;
 import com.cartonerp.service.ProductionRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -20,13 +21,14 @@ import java.util.*;
 public class InventoryController {
     @Autowired private InventoryRepository repo;
     @Autowired private ProductionRecordRepository productionRecordRepo;
+    @Autowired private DeliveryNoteService deliveryNoteService;
     @Autowired private ProductionRecordService productionRecordService;
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
-        productionRecordService.syncReceivedPurchasesWithoutRecord();
+        deliveryNoteService.syncPendingDeliveryNotes();
         List<Map<String, Object>> rows = buildProductionStockSummary();
         if (q != null && !q.isBlank()) {
             String keyword = q.trim().toLowerCase();
@@ -67,7 +69,6 @@ public class InventoryController {
             String key = summaryKey(productionOrder, purchaseOrder, salesOrder);
             Summary summary = grouped.computeIfAbsent(key, k -> new Summary(productionOrder, purchaseOrder, salesOrder));
             summary.inboundQty += intValue(record.getOutputQty());
-            summary.deliveryQty += intValue(record.getDeliveryQty());
         }
         return grouped.values().stream().map(Summary::toMap).toList();
     }
@@ -155,6 +156,7 @@ public class InventoryController {
                 boxUnitPrice = round2(customerUnitPrice * singleArea);
             }
             double area = round4(singleArea * inboundQty);
+            deliveryQty = deliveryNoteService.deliveredQtyForOrder(productionOrder, salesOrder);
             int remainingStock = inboundQty - deliveryQty;
 
             Map<String, Object> m = new LinkedHashMap<>();

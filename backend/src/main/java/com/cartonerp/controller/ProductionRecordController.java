@@ -3,6 +3,7 @@ package com.cartonerp.controller;
 import com.cartonerp.common.Result;
 import com.cartonerp.entity.*;
 import com.cartonerp.repository.*;
+import com.cartonerp.service.DeliveryNoteService;
 import com.cartonerp.service.ProductionRecordService;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ public class ProductionRecordController {
     @Autowired private ProductionOrderRepository productionOrderRepo;
     @Autowired private com.cartonerp.service.BusinessService businessService;
     @Autowired private ProductionRecordService productionRecordService;
+    @Autowired private DeliveryNoteService deliveryNoteService;
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
@@ -55,6 +57,7 @@ public class ProductionRecordController {
         applyStockCalculation(r);
         ProductionRecord saved = repo.save(r);
         businessService.onProductionRecordAdded(saved);
+        deliveryNoteService.syncPendingDeliveryNotes();
         return Result.ok(toMap(saved), "创建成功");
     }
 
@@ -78,6 +81,7 @@ public class ProductionRecordController {
         applyStockCalculation(ex);
         ProductionRecord saved = repo.save(ex);
         businessService.onProductionRecordAdded(saved);
+        deliveryNoteService.syncPendingDeliveryNotes();
         return Result.ok(toMap(saved), "更新成功");
     }
 

@@ -89,7 +89,7 @@ const rules = reactive({})
 const asyncOptions = reactive({})  // key → [{value, label}]
 const lastChangedKey = ref('')
 const imageInputRefs = {}
-const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth']
+const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth', 'inboundAmount', 'area', 'amount', 'remainingStock']
 
 function displayText(value, field = {}) {
   if (value === '' || value === null || value === undefined) return '-'
@@ -183,6 +183,7 @@ watch(() => props.modelValue, (v) => {
   visible.value = v
   if (v) {
     Object.keys(form).forEach(k => delete form[k])
+    Object.assign(form, props.initialData || {})
     props.fields.forEach(f => {
       form[f.key] = props.initialData?.[f.key] ?? ''
       if (f.hintKey && !(f.hintKey in form)) form[f.hintKey] = props.initialData?.[f.hintKey] ?? ''

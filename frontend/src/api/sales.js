@@ -18,7 +18,9 @@ export const salesOrdersAPI = {
 
 export const deliveryNotesAPI = {
   list(params) { return request.get('/delivery-notes', { params }) },
+  get(id) { return request.get(`/delivery-notes/${id}`) },
   create(data) { return request.post('/delivery-notes', data) },
   update(id, data) { return request.put(`/delivery-notes/${id}`, data) },
+  markPrinted(id) { return request.post(`/delivery-notes/${id}/mark-printed`) },
   delete(id) { return request.delete(`/delivery-notes/${id}`) },
 }

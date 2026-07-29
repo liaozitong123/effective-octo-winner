@@ -37,7 +37,7 @@ const columns = [
   { key: 'inboundAmount', label: '入库金额', minWidth: 110 },
   { key: 'inboundQty', label: '入库数量', minWidth: 100 },
   { key: 'boxUnitPrice', label: '纸箱单价', minWidth: 110 },
-  { key: 'deliveryQty', label: '送货数量', minWidth: 100 },
+  { key: 'deliveryQty', label: '已送货数量', minWidth: 110 },
   { key: 'amount', label: '金额', minWidth: 100 },
   { key: 'remainingStock', label: '剩余库存', minWidth: 100 },
 ]

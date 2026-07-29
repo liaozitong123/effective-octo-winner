@@ -1,135 +1,437 @@
 <template>
-  <div>
-    <div class="btn-group no-print">
-      <el-button type="primary" @click="window.print()">打印送货单</el-button>
-      <el-button @click="$router.back()">返回</el-button>
+  <div class="delivery-print-page">
+    <div class="print-actions no-print">
+      <el-button type="primary" @click="printPage">打印送货单</el-button>
+      <el-button @click="router.back()">返回</el-button>
+      <el-checkbox v-model="printRedColumns" class="print-option">打印标红栏</el-checkbox>
     </div>
-    <div class="bill-container">
-      <div class="bill-header-title">福建泉州琪华工艺品有限公司</div>
-      <div class="bill-sub-title">华天纸箱送货单</div>
-      <div class="bill-info-row">
-        <span>送至：<input type="text" v-model="data.customerName"></span>
-        <span>送货单号：<input type="text" v-model="data.noteNo"></span>
-      </div>
-      <div class="bill-info-row">
-        <span>送货人：<input type="text" v-model="data.carrier"></span>
-        <span>送货日期：<input type="date" v-model="data.deliveryDate"></span>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>货号规格</th><th>下单日期</th><th>材质</th><th>单价</th><th>单个面积</th>
-            <th>单个价格</th><th>出货数量</th><th>出货金额</th><th>盒式</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, idx) in items" :key="idx">
-            <td><input type="text" v-model="item.spec"></td>
-            <td><input type="date" v-model="item.orderDate"></td>
-            <td><input type="text" v-model="item.material"></td>
-            <td><input type="number" step="0.01" v-model="item.price"></td>
-            <td><input type="number" step="0.01" v-model="item.area"></td>
-            <td><input type="number" step="0.01" v-model="item.unitPrice" @change="calcTotal"></td>
-            <td><input type="number" v-model.number="item.qty" @change="calcTotal"></td>
-            <td><input type="number" step="0.01" v-model="item.amount" readonly></td>
-            <td><input type="text" v-model="item.boxType"></td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="6">合计</td>
-            <td><input type="number" :value="totalQty" readonly></td>
-            <td><input type="number" step="0.01" :value="totalAmount.toFixed(2)" readonly></td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="sign-area">
-        <div>收货人（签字）：<span class="sign-name"><input type="text" v-model="data.signName"></span></div>
-        <div class="note-text">货到验明：收受属实，如有遗漏，请于两天内告知，否则当正确无异议。存根：白色回单；红色客户；黄色</div>
-      </div>
-      <div class="btn-group no-print">
-        <el-button @click="addRow">新增一行</el-button>
-        <el-button @click="calcTotal">自动计算合计</el-button>
-        <el-button type="primary" @click="window.print()">打印送货单</el-button>
-      </div>
+
+    <div v-if="note.id" class="print-sheet">
+      <div class="paper-note">三联二等分针式打印纸</div>
+
+      <header class="sheet-header">
+        <h1>福建泉州琪华工艺品有限公司</h1>
+        <h2>华天纸箱送货单</h2>
+      </header>
+
+      <section class="meta-grid">
+        <div class="meta-item span-2"><span>客户：</span><strong>{{ value(note.customerName) }}</strong></div>
+        <div class="meta-item span-2"><span>联系人：</span><strong>{{ value(note.customerContact) }}</strong></div>
+        <div class="meta-item span-2"><span>送货单号：</span><strong>{{ value(note.noteNo) }}</strong></div>
+        <div class="meta-item span-2"><span>地址：</span><strong>{{ value(note.customerAddress) }}</strong></div>
+        <div class="meta-item span-2"><span>电话：</span><strong>{{ value(note.customerPhone) }}</strong></div>
+        <div class="meta-item span-2"><span>送货日期：</span><strong>{{ value(note.deliveryDate) }}</strong></div>
+      </section>
+
+      <section class="table-with-copy">
+        <table class="detail-table">
+          <colgroup>
+            <col class="col-index" />
+            <col class="col-order" />
+            <col class="col-product" />
+            <col class="col-material" />
+            <col class="col-spec" />
+            <col class="col-qty" />
+            <col class="col-area" />
+            <col class="col-price" />
+            <col class="col-money" />
+            <col v-if="printRedColumns" class="col-stock" />
+            <col v-if="printRedColumns" class="col-unit" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>序号</th>
+              <th>销售订单号</th>
+              <th>产品名称</th>
+              <th>客户材质</th>
+              <th>规格</th>
+              <th>数量</th>
+              <th>面积</th>
+              <th>纸箱单价</th>
+              <th>金额</th>
+              <th v-if="printRedColumns" class="red-column">剩余库存</th>
+              <th v-if="printRedColumns" class="red-column">客户平方单价</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="data-row">
+              <td>1</td>
+              <td>{{ value(note.salesOrderNo) }}</td>
+              <td>{{ value(note.productName) }}</td>
+              <td>{{ value(note.customerMaterial) }}</td>
+              <td>{{ value(note.spec) }}</td>
+              <td>{{ value(note.deliveryQty) }}</td>
+              <td>{{ value(note.area) }}</td>
+              <td>{{ value(note.boxUnitPrice) }}</td>
+              <td>{{ value(note.amount) }}</td>
+              <td v-if="printRedColumns">{{ value(note.remainingStock) }}</td>
+              <td v-if="printRedColumns">{{ value(note.customerUnitPrice) }}</td>
+            </tr>
+            <tr v-for="rowNo in blankRows" :key="rowNo" class="blank-row">
+              <td>{{ rowNo }}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td v-if="printRedColumns"></td>
+              <td v-if="printRedColumns"></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="5">合计人民币总金额：（{{ amountUppercase }}）</td>
+              <td>{{ value(note.deliveryQty) }} 个</td>
+              <td>{{ value(note.area) }} ㎡</td>
+              <td></td>
+              <td :colspan="printRedColumns ? 3 : 1">{{ value(note.amount) }} 元</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <aside class="copy-labels">
+          <span>一联存根（白）</span>
+          <span>二联结算（红）</span>
+          <span>三联客户（黄）</span>
+        </aside>
+      </section>
+
+      <section class="manual-row">
+        <div><span>备注：</span><strong>{{ value(note.notes) }}</strong></div>
+        <div><span>司机：</span><strong>{{ value(note.driver) }}</strong></div>
+        <div><span>开单人：</span><strong>{{ value(note.issuer) }}</strong></div>
+        <div><span>业务员：</span><strong>{{ value(note.salesperson) }}</strong></div>
+        <div><span>复核计数：</span><strong>{{ value(note.reviewCount) }}</strong></div>
+        <div><span>客户签字：</span><strong>{{ value(note.customerSignature) }}</strong></div>
+      </section>
+
+      <footer class="terms">
+        <p>特此说明：1、对于产品质量问题有异议，应在收货后48小时内向我厂提出，否则视产品为合格；</p>
+        <p>2、本送货单，货到验明，收妥实与凭此，客户收货人一经签字即生效；3、收货单位收货后按双方约定结算货款。</p>
+      </footer>
     </div>
+
+    <el-empty v-else description="未找到送货单" />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { deliveryNotesAPI, salesOrdersAPI, customersAPI } from '../../api/sales'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { deliveryNotesAPI } from '../../api/sales'
 
 const route = useRoute()
-const data = reactive({ noteNo:'', customerName:'', carrier:'', deliveryDate:'', signName:'' })
-const items = reactive([
-  { spec:'', orderDate:'', material:'', price:0, area:0, unitPrice:0, qty:0, amount:0, boxType:'' },
-  { spec:'', orderDate:'', material:'', price:0, area:0, unitPrice:0, qty:0, amount:0, boxType:'' },
-  { spec:'', orderDate:'', material:'', price:0, area:0, unitPrice:0, qty:0, amount:0, boxType:'' },
-])
-const totalQty = computed(() => items.reduce((s, i) => s + (i.qty || 0), 0))
-const totalAmount = computed(() => items.reduce((s, i) => s + (i.amount || 0), 0))
+const router = useRouter()
+const note = reactive({})
+const printRedColumns = ref(true)
+const blankRows = Array.from({ length: 7 }, (_, index) => index + 2)
 
-function calcTotal() {
-  items.forEach(i => { i.amount = parseFloat(((i.unitPrice || 0) * (i.qty || 0)).toFixed(2)) })
+const amountUppercase = computed(() => moneyToChinese(note.amount))
+
+function value(v) {
+  return v !== null && v !== undefined && v !== '' ? v : '-'
 }
 
-function addRow() {
-  items.push({ spec:'', orderDate:'', material:'', price:0, area:0, unitPrice:0, qty:0, amount:0, boxType:'' })
+function numberValue(v) {
+  const number = Number(v)
+  return Number.isFinite(number) ? number : 0
 }
 
-onMounted(async () => {
-  const id = route.query.id
-  if (id) {
-    try {
-      const res = await deliveryNotesAPI.list({ page:1, perPage:100, q:id })
-      const dns = res.data.data || []
-      const dn = dns.find(d => String(d.id) === String(id))
-      if (dn) {
-        data.noteNo = dn.noteNo || ''
-        data.customerName = dn.customerName || ''
-        data.deliveryDate = dn.deliveryDate || ''
-        data.carrier = dn.carrier || ''
-        // Try loading sales order details for the first item
-        try {
-          const soRes = await salesOrdersAPI.list({ page:1, perPage:100 })
-          const sos = soRes.data.data || []
-          const so = sos.find(s => s.customerName === dn.customerName)
-          if (so && items.length > 0) {
-            items[0].spec = so.spec || ''
-            items[0].material = so.material || ''
-            items[0].unitPrice = so.unitPrice || 0
-            items[0].qty = dn.qty || 0
-            items[0].amount = parseFloat(((items[0].unitPrice * items[0].qty).toFixed(2)))
-          } else if (items.length > 0) {
-            items[0].qty = dn.qty || 0
-          }
-        } catch(e) {}
+function moneyToChinese(value) {
+  const amount = Math.round(numberValue(value) * 100)
+  if (amount <= 0) return '零元整'
+
+  const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖']
+  const units = ['分', '角', '元', '拾', '佰', '仟', '万', '拾', '佰', '仟', '亿', '拾', '佰', '仟']
+  let text = ''
+  let zeroPending = false
+
+  String(amount).split('').reverse().forEach((char, index) => {
+    const digit = Number(char)
+    const unit = units[index] || ''
+    if (digit === 0) {
+      if (['元', '万', '亿'].includes(unit)) {
+        text = unit + text
+        zeroPending = false
+      } else {
+        zeroPending = true
       }
-    } catch(e) {}
+      return
+    }
+    text = `${zeroPending ? '零' : ''}${digits[digit]}${unit}${text}`
+    zeroPending = false
+  })
+
+  text = text
+    .replace(/零+/g, '零')
+    .replace(/零(万|亿)/g, '$1')
+    .replace(/亿万/g, '亿')
+    .replace(/零元/g, '元')
+  if (!text.includes('角') && !text.includes('分')) text += '整'
+  return text
+}
+
+async function loadNote() {
+  const id = route.query.id
+  if (!id) return
+  const res = await deliveryNotesAPI.get(id)
+  Object.assign(note, res.data?.data || {})
+}
+
+async function printPage() {
+  if (note.id && !note.printed) {
+    const res = await deliveryNotesAPI.markPrinted(note.id)
+    Object.assign(note, res.data?.data || {})
   }
-})
+  window.print()
+}
+
+onMounted(loadNote)
 </script>
 
 <style scoped>
-* { margin:0; padding:0; box-sizing:border-box; font-family:"SimSun","宋体",monospace; }
-.bill-container { width:820px; margin:0 auto; background:#fff; border:1px solid #333; padding:20px; position:relative; }
-.bill-container::before { content:""; position:absolute; top:-12px; left:0; right:0; height:12px; background-image:radial-gradient(circle,#000 4px,transparent 4px); background-size:45px 12px; background-repeat:repeat-x; }
-.bill-header-title { text-align:center; font-size:24px; font-weight:bold; margin-bottom:8px; }
-.bill-sub-title { text-align:center; font-size:18px; margin-bottom:20px; }
-.bill-info-row { display:flex; justify-content:space-between; margin-bottom:8px; font-size:15px; align-items:center; }
-.bill-info-row input { border:1px solid #999; padding:2px 4px; width:140px; }
-table { width:100%; border-collapse:collapse; margin:15px 0; font-size:14px; }
-th, td { border:1px solid #333; padding:4px; text-align:center; }
-td input { width:100%; border:none; outline:none; text-align:center; background:transparent; font-size:13px; }
-.total-row { font-weight:bold; }
-.sign-area { margin-top:20px; font-size:15px; line-height:1.8; }
-.sign-name input { font-size:36px; font-family:"KaiTi","楷体"; border:none; border-bottom:1px solid #000; width:200px; outline:none; }
-.note-text { margin-top:15px; font-size:13px; color:#333; }
-.btn-group { text-align:center; margin:20px 0; }
+@page {
+  size: A4 landscape;
+  margin: 7mm;
+}
+
+.delivery-print-page {
+  min-height: 100vh;
+  padding: 18px;
+  background: #eef2f7;
+  color: #000;
+  font-family: SimSun, "Songti SC", serif;
+}
+
+.print-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.print-option {
+  margin-left: 8px;
+  font-weight: 700;
+}
+
+.print-sheet {
+  position: relative;
+  width: 297mm;
+  max-width: calc(100vw - 36px);
+  min-height: 210mm;
+  margin: 0 auto;
+  padding: 5mm 11mm 7mm 11mm;
+  background:
+    linear-gradient(#e5e7eb 1px, transparent 1px),
+    linear-gradient(90deg, #e5e7eb 1px, transparent 1px),
+    #fff;
+  background-size: 18.5mm 7.4mm;
+  border: 1px solid transparent;
+  box-shadow: 0 14px 36px rgba(15, 23, 42, .16);
+}
+
+.paper-note {
+  margin-left: 18mm;
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.sheet-header {
+  text-align: center;
+  margin-top: 10mm;
+  margin-bottom: 9mm;
+}
+
+.sheet-header h1 {
+  margin: 0 0 5mm;
+  font-size: 23px;
+  line-height: 1;
+  letter-spacing: 0;
+  font-weight: 800;
+}
+
+.sheet-header h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: 0;
+  font-weight: 800;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: 29mm 47mm 29mm 47mm 35mm 57mm;
+  row-gap: 6mm;
+  align-items: end;
+  width: 244mm;
+  margin-left: 9mm;
+  margin-bottom: 2mm;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.meta-item {
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.meta-item span {
+  flex: 0 0 auto;
+}
+
+.meta-item strong {
+  min-width: 0;
+  flex: 1;
+  min-height: 5mm;
+  border-bottom: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.table-with-copy {
+  display: grid;
+  grid-template-columns: 244mm 16mm;
+  column-gap: 5mm;
+  align-items: stretch;
+  margin-left: 9mm;
+}
+
+.detail-table {
+  width: 244mm;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+  background: #fff;
+}
+
+.detail-table th,
+.detail-table td {
+  border: 1px solid #000;
+  padding: 0 1mm;
+  text-align: center;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+
+.detail-table th {
+  height: 6.5mm;
+  font-weight: 800;
+}
+
+.detail-table td {
+  height: 10.6mm;
+}
+
+.detail-table .blank-row td {
+  height: 7.2mm;
+}
+
+.detail-table .total-row td {
+  height: 9.6mm;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.red-column {
+  color: #f00;
+}
+
+.col-index { width: 15mm; }
+.col-order { width: 30mm; }
+.col-product { width: 25mm; }
+.col-material { width: 23mm; }
+.col-spec { width: 15mm; }
+.col-qty { width: 20mm; }
+.col-area { width: 15mm; }
+.col-price { width: 22mm; }
+.col-money { width: 11mm; }
+.col-stock { width: 15mm; }
+.col-unit { width: 15mm; }
+
+.copy-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  border-left: 1px dashed #777;
+  padding-left: 5mm;
+  font-size: 13px;
+  font-weight: 800;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.copy-labels span {
+  display: block;
+}
+
+.manual-row {
+  display: grid;
+  grid-template-columns: 2fr repeat(5, 1fr);
+  gap: 2mm;
+  width: 244mm;
+  margin: 3mm 0 0 9mm;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.manual-row div {
+  min-height: 8mm;
+  border-bottom: 1px solid #000;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.manual-row span {
+  flex: 0 0 auto;
+}
+
+.manual-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.terms {
+  width: 244mm;
+  margin: 12mm 0 0 9mm;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.terms p {
+  margin: 0;
+}
+
 @media print {
-  .no-print { display:none; }
-  .bill-container { width:100%; border:none; }
-  .bill-container::before { display:none; }
+  .no-print {
+    display: none;
+  }
+
+  .delivery-print-page {
+    min-height: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .print-sheet {
+    width: 100%;
+    max-width: none;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 }
 </style>
