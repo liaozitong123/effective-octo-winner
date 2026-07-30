@@ -7,10 +7,16 @@
     table-max-height="calc(100vh - 232px)"
     showPrint
     hideAdd
+    selectable
+    :selectableRow="canSelectForMerge"
+    @selection-change="handleSelectionChange"
     @edit="openEdit"
     @delete="handleDelete"
     @print="handlePrint"
   >
+    <template #toolbar-actions>
+      <el-button type="primary" plain :disabled="selectedRows.length < 2" @click="handleMergePrint">合并打印</el-button>
+    </template>
     <template #deliveryStatus="{ row }">
       <span :class="['delivery-status', row.deliveryStatus === '已送货' ? 'is-delivered' : 'is-undelivered']">
         {{ row.deliveryStatus }}
@@ -30,7 +36,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
 import { deliveryNotesAPI } from '../../api/sales'
@@ -40,6 +46,16 @@ const tableRef = ref(null)
 const dialogVisible = ref(false)
 const editId = ref(null)
 const editData = ref({})
+const selectedRows = ref([])
+const COMMON_PRINT_FIELDS = [
+  { key: 'notes', label: '备注' },
+  { key: 'driver', label: '司机' },
+  { key: 'deliveryDate', label: '送货日期' },
+  { key: 'issuer', label: '开单人' },
+  { key: 'salesperson', label: '业务员' },
+  { key: 'reviewCount', label: '复核计数' },
+  { key: 'customerSignature', label: '客户签字' },
+]
 
 const columns = [
   { key: 'deliveryStatus', label: '送货状态', slot: 'deliveryStatus', width: 92, minWidth: 92 },
@@ -142,6 +158,66 @@ function openEdit(row) {
 }
 
 function handlePrint(row) { router.push(`/warehouse/delivery/print?id=${row.id}`) }
+
+function canSelectForMerge(row) {
+  return !row.printed && row.deliveryStatus !== '已送货'
+}
+
+function handleSelectionChange(rows) {
+  selectedRows.value = rows
+}
+
+function normalizeCommonValue(value) {
+  return value === null || value === undefined ? '' : String(value).trim()
+}
+
+function sameCustomer(rows) {
+  const first = rows[0]
+  return rows.every(row => {
+    if (first.customerId || row.customerId) return Number(row.customerId) === Number(first.customerId)
+    return normalizeCommonValue(row.customerName) === normalizeCommonValue(first.customerName)
+  })
+}
+
+function differentCommonFields(rows) {
+  return COMMON_PRINT_FIELDS.filter(field => {
+    const firstValue = normalizeCommonValue(rows[0]?.[field.key])
+    return rows.some(row => normalizeCommonValue(row[field.key]) !== firstValue)
+  })
+}
+
+function validateMergeRows(rows) {
+  if (rows.length < 2) {
+    ElMessage.warning('请至少勾选两张未送货送货单')
+    return false
+  }
+  const printedRows = rows.filter(row => row.printed || row.deliveryStatus === '已送货')
+  if (printedRows.length) {
+    ElMessage.error('已送货的送货单不能参与合并打印')
+    return false
+  }
+  if (!sameCustomer(rows)) {
+    ElMessage.error('只能合并打印同一个客户的送货单')
+    return false
+  }
+  const emptyQtyRows = rows.filter(row => numberValue(row.deliveryQty) <= 0)
+  if (emptyQtyRows.length) {
+    ElMessage.error(`无法打印：${emptyQtyRows.map(row => row.noteNo).join('、')} 的送货数量为空或为0`)
+    return false
+  }
+  const diffFields = differentCommonFields(rows)
+  if (diffFields.length) {
+    ElMessage.error(`无法打印：${diffFields.map(field => field.label).join('、')}填写不同`)
+    return false
+  }
+  return true
+}
+
+function handleMergePrint() {
+  const rows = selectedRows.value
+  if (!validateMergeRows(rows)) return
+  router.push(`/warehouse/delivery/print?ids=${rows.map(row => row.id).join(',')}`)
+}
 
 async function handleDelete(row) {
   await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })

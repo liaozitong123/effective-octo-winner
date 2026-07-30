@@ -61,7 +61,38 @@ public class DeliveryNoteController {
         return Result.ok(toMap(saved), "已标记打印");
     }
 
+    @PostMapping("/mark-printed")
+    public Result<List<Map<String, Object>>> markPrintedBatch(@RequestBody Map<String, Object> body) {
+        List<Long> ids = readIds(body.get("ids"));
+        if (ids.isEmpty()) return Result.fail(400, "请选择送货单");
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (Long id : ids) {
+            DeliveryNote ex = repo.findById(id).orElse(null);
+            if (ex == null) return Result.fail(404, "送货单不存在：" + id);
+            DeliveryNote saved = deliveryNoteService.markPrinted(ex);
+            rows.add(toMap(saved));
+        }
+        return Result.ok(rows, "已标记打印");
+    }
+
     @DeleteMapping("/{id}") public Result<?> delete(@PathVariable Long id) { repo.deleteById(id); return Result.ok(null, "删除成功"); }
+
+    private List<Long> readIds(Object value) {
+        if (!(value instanceof List<?> rawIds)) return List.of();
+        List<Long> ids = new ArrayList<>();
+        for (Object rawId : rawIds) {
+            if (rawId instanceof Number number) {
+                ids.add(number.longValue());
+            } else if (rawId != null && !String.valueOf(rawId).isBlank()) {
+                try {
+                    ids.add(Long.parseLong(String.valueOf(rawId).trim()));
+                } catch (NumberFormatException ignored) {
+                    return List.of();
+                }
+            }
+        }
+        return ids;
+    }
 
     private Map<String, Object> toMap(DeliveryNote d) {
         ProductionOrder productionOrder = d.getProductionOrder();

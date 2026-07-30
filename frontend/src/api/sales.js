@@ -22,5 +22,6 @@ export const deliveryNotesAPI = {
   create(data) { return request.post('/delivery-notes', data) },
   update(id, data) { return request.put(`/delivery-notes/${id}`, data) },
   markPrinted(id) { return request.post(`/delivery-notes/${id}/mark-printed`) },
+  markPrintedBatch(ids) { return request.post('/delivery-notes/mark-printed', { ids }) },
   delete(id) { return request.delete(`/delivery-notes/${id}`) },
 }

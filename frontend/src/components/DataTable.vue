@@ -7,11 +7,32 @@
       </el-input>
         <span class="record-count">共 {{ total }} 条</span>
       </div>
-      <el-button v-if="!hideAdd" type="primary" :icon="Plus" class="add-btn" @click="$emit('add')">新增</el-button>
+      <div class="toolbar-actions">
+        <slot name="toolbar-actions" />
+        <el-button v-if="!hideAdd" type="primary" :icon="Plus" class="add-btn" @click="$emit('add')">新增</el-button>
+      </div>
     </div>
 
     <div class="table-card">
-      <el-table :data="tableData" border style="width:100%" v-loading="loading" class="desktop-table" :max-height="tableMaxHeight">
+      <el-table
+        ref="desktopTableRef"
+        :data="tableData"
+        border
+        style="width:100%"
+        v-loading="loading"
+        class="desktop-table"
+        :max-height="tableMaxHeight"
+        :row-key="rowKey"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column
+          v-if="selectable"
+          type="selection"
+          width="46"
+          fixed="left"
+          :selectable="selectableRow"
+          reserve-selection
+        />
         <el-table-column
           v-for="col in columns"
           :key="col.key"
@@ -38,7 +59,15 @@
       <div class="mobile-record-list" v-loading="loading">
         <div v-if="!tableData.length && !loading" class="empty-mobile">暂无数据</div>
         <div v-for="row in tableData" :key="row.id || row.orderNo || JSON.stringify(row)" class="mobile-record-card">
-          <div class="mobile-record-title">{{ getPrimaryValue(row) }}</div>
+          <div class="mobile-record-head">
+            <el-checkbox
+              v-if="selectable"
+              :model-value="isSelected(row)"
+              :disabled="!selectableRow(row)"
+              @change="checked => toggleMobileSelection(row, checked)"
+            />
+            <div class="mobile-record-title">{{ getPrimaryValue(row) }}</div>
+          </div>
           <div class="mobile-fields">
             <div v-for="col in mobileColumns" :key="col.key" class="mobile-field">
               <span>{{ col.label }}</span>
@@ -85,16 +114,21 @@ const props = defineProps({
   hideAdd: { type: Boolean, default: false },
   hideActions: { type: Boolean, default: false },
   tableMaxHeight: { type: [String, Number], default: 'calc(100vh - 232px)' },
+  selectable: { type: Boolean, default: false },
+  rowKey: { type: String, default: 'id' },
+  selectableRow: { type: Function, default: () => true },
 })
 
-const emit = defineEmits(['add', 'edit', 'delete', 'print', 'labelPrint'])
+const emit = defineEmits(['add', 'edit', 'delete', 'print', 'labelPrint', 'selection-change'])
 
+const desktopTableRef = ref(null)
 const tableData = ref([])
 const loading = ref(false)
 const searchText = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+const selectedRows = ref([])
 const defaultColumnWidth = 118
 const mobileColumns = computed(() => props.columns.filter(col => col.key !== 'id').slice(0, 4))
 const actionColumnWidth = computed(() => {
@@ -119,14 +153,47 @@ async function loadData() {
     const res = await props.fetchData({ page: currentPage.value, perPage: pageSize.value, q: searchText.value })
     tableData.value = res.data.data || []
     total.value = res.data.total || 0
+    if (props.selectable) {
+      selectedRows.value = selectedRows.value.filter(selected => tableData.value.some(row => rowKeyValue(row) === rowKeyValue(selected)))
+      emit('selection-change', selectedRows.value)
+    }
   } catch(e) { tableData.value = [] }
   loading.value = false
 }
 
 function doSearch() { currentPage.value = 1; loadData() }
 
+function rowKeyValue(row) {
+  return row?.[props.rowKey]
+}
+
+function handleSelectionChange(rows) {
+  selectedRows.value = rows
+  emit('selection-change', rows)
+}
+
+function isSelected(row) {
+  return selectedRows.value.some(selected => rowKeyValue(selected) === rowKeyValue(row))
+}
+
+function toggleMobileSelection(row, checked) {
+  if (checked && !isSelected(row)) {
+    selectedRows.value = [...selectedRows.value, row]
+  } else if (!checked) {
+    selectedRows.value = selectedRows.value.filter(selected => rowKeyValue(selected) !== rowKeyValue(row))
+  }
+  desktopTableRef.value?.toggleRowSelection(row, checked)
+  emit('selection-change', selectedRows.value)
+}
+
+function clearSelection() {
+  selectedRows.value = []
+  desktopTableRef.value?.clearSelection()
+  emit('selection-change', [])
+}
+
 onMounted(loadData)
-defineExpose({ loadData, doSearch })
+defineExpose({ loadData, doSearch, clearSelection })
 </script>
 
 <style scoped>
@@ -166,6 +233,14 @@ defineExpose({ loadData, doSearch })
 
 .add-btn {
   box-shadow: 0 7px 15px rgba(37, 99, 235, .18);
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .table-card {
@@ -241,6 +316,12 @@ defineExpose({ loadData, doSearch })
   .mobile-record-title {
     color: var(--erp-primary);
     font-weight: 800;
+  }
+
+  .mobile-record-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 8px;
   }
 
