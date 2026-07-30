@@ -8,4 +8,5 @@ import java.util.List;
 public interface DeliveryNoteRepository extends JpaRepository<DeliveryNote, Long>, JpaSpecificationExecutor<DeliveryNote> {
     List<DeliveryNote> findByProductionOrderId(Long productionOrderId);
     List<DeliveryNote> findBySalesOrderId(Long salesOrderId);
+    List<DeliveryNote> findByNoteNoStartingWith(String prefix);
 }

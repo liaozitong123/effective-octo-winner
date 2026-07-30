@@ -9,17 +9,20 @@ import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.DeliveryNoteRepository;
 import com.cartonerp.repository.ProductionOrderRepository;
 import com.cartonerp.repository.ProductionRecordRepository;
-import com.cartonerp.util.OrderNumberUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Service
 public class DeliveryNoteService {
+    private static final DateTimeFormatter DELIVERY_NOTE_NO_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
+
     @Autowired private DeliveryNoteRepository deliveryNoteRepo;
     @Autowired private ProductionOrderRepository productionOrderRepo;
     @Autowired private ProductionRecordRepository productionRecordRepo;
@@ -45,7 +48,6 @@ public class DeliveryNoteService {
             if (hasBlankDraft) continue;
 
             DeliveryNote note = new DeliveryNote();
-            note.setNoteNo(OrderNumberUtil.next("DN"));
             note.setProductionOrder(productionOrder);
             note.setSalesOrder(salesOrder);
             note.setCustomer(sourceCustomer(productionOrder));
@@ -60,8 +62,6 @@ public class DeliveryNoteService {
 
     @Transactional
     public DeliveryNote saveManualFields(DeliveryNote target, DeliveryNote source) {
-        if (target.getNoteNo() == null || target.getNoteNo().isBlank()) target.setNoteNo(OrderNumberUtil.next("DN"));
-        if (source.getNoteNo() != null && !source.getNoteNo().isBlank()) target.setNoteNo(source.getNoteNo());
         if (source.getProductionOrder() != null && source.getProductionOrder().getId() != null) {
             productionOrderRepo.findById(source.getProductionOrder().getId()).ifPresent(target::setProductionOrder);
         }
@@ -83,10 +83,27 @@ public class DeliveryNoteService {
     }
 
     @Transactional
-    public DeliveryNote markPrinted(DeliveryNote note) {
+    public synchronized DeliveryNote markPrinted(DeliveryNote note) {
+        if (note.getNoteNo() == null || note.getNoteNo().isBlank()) note.setNoteNo(nextDeliveryNoteNo());
         note.setPrinted(true);
         normalizePrintStatus(note);
         return deliveryNoteRepo.save(note);
+    }
+
+    @Transactional
+    public synchronized List<DeliveryNote> markPrintedBatch(List<DeliveryNote> notes) {
+        if (notes == null || notes.isEmpty()) return List.of();
+        String noteNo = notes.stream()
+            .map(DeliveryNote::getNoteNo)
+            .filter(value -> value != null && !value.isBlank())
+            .findFirst()
+            .orElseGet(this::nextDeliveryNoteNo);
+        return notes.stream().map(note -> {
+            note.setNoteNo(noteNo);
+            note.setPrinted(true);
+            normalizePrintStatus(note);
+            return deliveryNoteRepo.save(note);
+        }).toList();
     }
 
     public int inboundQty(ProductionOrder productionOrder) {
@@ -156,6 +173,26 @@ public class DeliveryNoteService {
     private String orderKey(ProductionOrder productionOrder, SalesOrder salesOrder) {
         if (salesOrder != null && salesOrder.getId() != null) return "SO:" + salesOrder.getId();
         return "PO:" + productionOrder.getId();
+    }
+
+    private String nextDeliveryNoteNo() {
+        String prefix = LocalDate.now().format(DELIVERY_NOTE_NO_DATE);
+        int next = deliveryNoteRepo.findByNoteNoStartingWith(prefix).stream()
+            .map(DeliveryNote::getNoteNo)
+            .mapToInt(noteNo -> deliveryNoteNoSuffix(prefix, noteNo))
+            .max()
+            .orElse(0) + 1;
+        if (next > 999) throw new IllegalStateException("当天送货单号已超过999");
+        return prefix + String.format("%03d", next);
+    }
+
+    private int deliveryNoteNoSuffix(String prefix, String noteNo) {
+        if (noteNo == null || !noteNo.startsWith(prefix) || noteNo.length() != prefix.length() + 3) return 0;
+        try {
+            return Integer.parseInt(noteNo.substring(prefix.length()));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     private int intValue(Number value) {

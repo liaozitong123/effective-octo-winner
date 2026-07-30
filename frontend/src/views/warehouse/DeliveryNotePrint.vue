@@ -9,8 +9,6 @@
     <el-alert v-if="printError" class="print-error no-print" type="error" :title="printError" show-icon :closable="false" />
 
     <div v-if="printRows.length && !printError" class="print-sheet">
-      <div class="paper-note">三联二等分针式打印纸</div>
-
       <header class="sheet-header">
         <h1>福建泉州琪华工艺品有限公司</h1>
         <h2>华天纸箱送货单</h2>
@@ -29,7 +27,6 @@
         <table class="detail-table">
           <colgroup>
             <col class="col-index" />
-            <col class="col-note" />
             <col class="col-order" />
             <col class="col-product" />
             <col class="col-material" />
@@ -44,7 +41,6 @@
           <thead>
             <tr>
               <th>序号</th>
-              <th>送货单号</th>
               <th>销售订单号</th>
               <th>产品名称</th>
               <th>客户材质</th>
@@ -59,22 +55,20 @@
           </thead>
           <tbody>
             <tr v-for="(row, index) in printRows" :key="row.id" class="data-row">
-              <td>{{ index + 1 }}</td>
-              <td>{{ value(row.noteNo) }}</td>
-              <td>{{ value(row.salesOrderNo) }}</td>
-              <td>{{ value(row.productName) }}</td>
-              <td>{{ value(row.customerMaterial) }}</td>
-              <td>{{ value(row.spec) }}</td>
-              <td>{{ value(row.deliveryQty) }}</td>
-              <td>{{ value(row.area) }}</td>
-              <td>{{ value(row.boxUnitPrice) }}</td>
-              <td>{{ value(row.amount) }}</td>
-              <td v-if="printRedColumns">{{ value(row.remainingStock) }}</td>
-              <td v-if="printRedColumns">{{ value(row.customerUnitPrice) }}</td>
+              <td><span class="cell-text">{{ index + 1 }}</span></td>
+              <td><span class="cell-text">{{ value(row.salesOrderNo) }}</span></td>
+              <td><span class="cell-text">{{ value(row.productName) }}</span></td>
+              <td><span class="cell-text">{{ value(row.customerMaterial) }}</span></td>
+              <td><span class="cell-text">{{ value(row.spec) }}</span></td>
+              <td><span class="cell-text">{{ value(row.deliveryQty) }}</span></td>
+              <td><span class="cell-text">{{ value(row.area) }}</span></td>
+              <td><span class="cell-text">{{ value(row.boxUnitPrice) }}</span></td>
+              <td><span class="cell-text">{{ value(row.amount) }}</span></td>
+              <td v-if="printRedColumns"><span class="cell-text">{{ value(row.remainingStock) }}</span></td>
+              <td v-if="printRedColumns"><span class="cell-text">{{ value(row.customerUnitPrice) }}</span></td>
             </tr>
             <tr v-for="rowNo in blankRows" :key="rowNo" class="blank-row">
               <td>{{ rowNo }}</td>
-              <td></td>
               <td></td>
               <td></td>
               <td></td>
@@ -87,20 +81,14 @@
               <td v-if="printRedColumns"></td>
             </tr>
             <tr class="total-row">
-              <td colspan="6">合计人民币总金额：（{{ amountUppercase }}）</td>
-              <td>{{ value(totals.deliveryQty) }} 个</td>
-              <td>{{ value(totals.area) }} ㎡</td>
+              <td colspan="5"><span class="cell-text total-text">合计人民币总金额：（{{ amountUppercase }}）</span></td>
+              <td><span class="cell-text">{{ value(totals.deliveryQty) }} 个</span></td>
+              <td><span class="cell-text">{{ value(totals.area) }} ㎡</span></td>
               <td></td>
-              <td :colspan="printRedColumns ? 3 : 1">{{ value(totals.amount) }} 元</td>
+              <td :colspan="printRedColumns ? 3 : 1"><span class="cell-text">{{ value(totals.amount) }} 元</span></td>
             </tr>
           </tbody>
         </table>
-
-        <aside class="copy-labels">
-          <span>一联存根（白）</span>
-          <span>二联结算（红）</span>
-          <span>三联客户（黄）</span>
-        </aside>
       </section>
 
       <section class="manual-row">
@@ -123,7 +111,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { deliveryNotesAPI } from '../../api/sales'
@@ -145,7 +133,7 @@ const COMMON_PRINT_FIELDS = [
 ]
 
 const printRows = computed(() => notes.value)
-const headerNoteNo = computed(() => printRows.value.length > 1 ? '见明细' : note.noteNo)
+const headerNoteNo = computed(() => note.noteNo || printRows.value.find(row => row.noteNo)?.noteNo || '')
 const blankRows = computed(() => {
   const start = printRows.value.length + 1
   return Array.from({ length: Math.max(0, 8 - printRows.value.length) }, (_, index) => start + index)
@@ -220,6 +208,10 @@ function normalizeCommonValue(value) {
   return value === null || value === undefined ? '' : String(value).trim()
 }
 
+function rowLabel(row) {
+  return row.noteNo || row.salesOrderNo || `ID ${row.id}`
+}
+
 function sameCustomer(rows) {
   const first = rows[0]
   return rows.every(row => {
@@ -239,9 +231,9 @@ function validatePrintableNotes(rows) {
   if (rows.length <= 1) return ''
   if (!sameCustomer(rows)) return '无法打印：只能合并打印同一个客户的送货单'
   const printedRows = rows.filter(row => row.printed || row.deliveryStatus === '已送货')
-  if (printedRows.length) return `无法打印：${printedRows.map(row => row.noteNo).join('、')} 已送货`
+  if (printedRows.length) return `无法打印：${printedRows.map(rowLabel).join('、')} 已送货`
   const emptyQtyRows = rows.filter(row => numberValue(row.deliveryQty) <= 0)
-  if (emptyQtyRows.length) return `无法打印：${emptyQtyRows.map(row => row.noteNo).join('、')} 的送货数量为空或为0`
+  if (emptyQtyRows.length) return `无法打印：${emptyQtyRows.map(rowLabel).join('、')} 的送货数量为空或为0`
   const diffFields = differentCommonFields(rows)
   if (diffFields.length) return `无法打印：${diffFields.map(field => field.label).join('、')}填写不同`
   return ''
@@ -277,6 +269,7 @@ async function printPage() {
     Object.assign(note, res.data?.data || {})
     notes.value = [res.data?.data || note]
   }
+  await nextTick()
   window.print()
 }
 
@@ -322,24 +315,14 @@ onMounted(loadNote)
   min-height: 210mm;
   margin: 0 auto;
   padding: 5mm 11mm 7mm 11mm;
-  background:
-    linear-gradient(#e5e7eb 1px, transparent 1px),
-    linear-gradient(90deg, #e5e7eb 1px, transparent 1px),
-    #fff;
-  background-size: 18.5mm 7.4mm;
+  background: #fff;
   border: 1px solid transparent;
   box-shadow: 0 14px 36px rgba(15, 23, 42, .16);
 }
 
-.paper-note {
-  margin-left: 18mm;
-  font-size: 13px;
-  line-height: 1.2;
-}
-
 .sheet-header {
   text-align: center;
-  margin-top: 10mm;
+  margin-top: 8mm;
   margin-bottom: 9mm;
 }
 
@@ -396,18 +379,15 @@ onMounted(loadNote)
 }
 
 .table-with-copy {
-  display: grid;
-  grid-template-columns: 244mm 16mm;
-  column-gap: 5mm;
-  align-items: stretch;
-  margin-left: 9mm;
+  width: 260mm;
+  margin: 0 auto;
 }
 
 .detail-table {
-  width: 244mm;
+  width: 260mm;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 12px;
+  font-size: 11px;
   background: #fff;
 }
 
@@ -417,7 +397,8 @@ onMounted(loadNote)
   padding: 0 .7mm;
   text-align: center;
   vertical-align: middle;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .detail-table th {
@@ -426,17 +407,32 @@ onMounted(loadNote)
 }
 
 .detail-table td {
-  height: 10.6mm;
+  height: 8.8mm;
 }
 
 .detail-table .blank-row td {
-  height: 7.2mm;
+  height: 6.2mm;
 }
 
 .detail-table .total-row td {
-  height: 9.6mm;
-  font-size: 12px;
+  height: 8.4mm;
+  font-size: 11px;
   font-weight: 800;
+}
+
+.cell-text {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+.total-text {
+  text-align: left;
+  padding-left: 1.2mm;
 }
 
 .red-column {
@@ -444,40 +440,23 @@ onMounted(loadNote)
 }
 
 .col-index { width: 10mm; }
-.col-note { width: 28mm; }
-.col-order { width: 28mm; }
-.col-product { width: 25mm; }
-.col-material { width: 20mm; }
-.col-spec { width: 24mm; }
-.col-qty { width: 15mm; }
-.col-area { width: 15mm; }
-.col-price { width: 17mm; }
-.col-money { width: 17mm; }
-.col-stock { width: 15mm; }
-.col-unit { width: 16mm; }
-
-.copy-labels {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  border-left: 1px dashed #777;
-  padding-left: 5mm;
-  font-size: 13px;
-  font-weight: 800;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-}
-
-.copy-labels span {
-  display: block;
-}
+.col-order { width: 38mm; }
+.col-product { width: 36mm; }
+.col-material { width: 24mm; }
+.col-spec { width: 38mm; }
+.col-qty { width: 18mm; }
+.col-area { width: 18mm; }
+.col-price { width: 21mm; }
+.col-money { width: 21mm; }
+.col-stock { width: 17mm; }
+.col-unit { width: 19mm; }
 
 .manual-row {
   display: grid;
   grid-template-columns: 2fr repeat(5, 1fr);
   gap: 2mm;
-  width: 244mm;
-  margin: 3mm 0 0 9mm;
+  width: 260mm;
+  margin: 3mm auto 0;
   font-size: 13px;
   font-weight: 700;
 }
@@ -500,8 +479,8 @@ onMounted(loadNote)
 }
 
 .terms {
-  width: 244mm;
-  margin: 12mm 0 0 9mm;
+  width: 260mm;
+  margin: 12mm auto 0;
   font-size: 13px;
   font-weight: 700;
   line-height: 1.7;

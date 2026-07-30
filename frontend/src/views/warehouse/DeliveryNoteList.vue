@@ -101,7 +101,7 @@ const fields = [
   { key: 'remainingStock', label: '剩余库存', type: 'display' },
   { key: 'notes', label: '备注', type: 'textarea' },
   { key: 'driver', label: '司机' },
-  { key: 'noteNo', label: '送货单号', required: true },
+  { key: 'noteNo', label: '送货单号', type: 'display' },
   { key: 'deliveryDate', label: '送货日期', type: 'date' },
   { key: 'issuer', label: '开单人' },
   { key: 'salesperson', label: '业务员' },
@@ -125,7 +125,7 @@ function round4(value) {
 function calculateForm(data) {
   const deliveryQty = numberValue(data.deliveryQty)
   const area = round4(numberValue(data.singleArea) * deliveryQty)
-  const amount = round2(area * numberValue(data.boxUnitPrice))
+  const amount = round2(deliveryQty * numberValue(data.boxUnitPrice))
   const remainingStock = numberValue(data.inboundQty) - numberValue(data.otherDeliveredQty) - deliveryQty
   return { ...data, area, amount, remainingStock }
 }
@@ -137,7 +137,6 @@ function onFormChange(form) {
 function toApiData(f) {
   return {
     productionOrder: f.productionOrderId ? { id: Number(f.productionOrderId) } : null,
-    noteNo: f.noteNo || '',
     qty: numberValue(f.deliveryQty),
     notes: f.notes || '',
     driver: f.driver || '',
@@ -171,6 +170,10 @@ function normalizeCommonValue(value) {
   return value === null || value === undefined ? '' : String(value).trim()
 }
 
+function rowLabel(row) {
+  return row.noteNo || row.salesOrderNo || `ID ${row.id}`
+}
+
 function sameCustomer(rows) {
   const first = rows[0]
   return rows.every(row => {
@@ -202,7 +205,7 @@ function validateMergeRows(rows) {
   }
   const emptyQtyRows = rows.filter(row => numberValue(row.deliveryQty) <= 0)
   if (emptyQtyRows.length) {
-    ElMessage.error(`无法打印：${emptyQtyRows.map(row => row.noteNo).join('、')} 的送货数量为空或为0`)
+    ElMessage.error(`无法打印：${emptyQtyRows.map(rowLabel).join('、')} 的送货数量为空或为0`)
     return false
   }
   const diffFields = differentCommonFields(rows)

@@ -65,13 +65,15 @@ public class DeliveryNoteController {
     public Result<List<Map<String, Object>>> markPrintedBatch(@RequestBody Map<String, Object> body) {
         List<Long> ids = readIds(body.get("ids"));
         if (ids.isEmpty()) return Result.fail(400, "请选择送货单");
-        List<Map<String, Object>> rows = new ArrayList<>();
+        List<DeliveryNote> notes = new ArrayList<>();
         for (Long id : ids) {
             DeliveryNote ex = repo.findById(id).orElse(null);
             if (ex == null) return Result.fail(404, "送货单不存在：" + id);
-            DeliveryNote saved = deliveryNoteService.markPrinted(ex);
-            rows.add(toMap(saved));
+            notes.add(ex);
         }
+        List<Map<String, Object>> rows = deliveryNoteService.markPrintedBatch(notes).stream()
+            .map(this::toMap)
+            .toList();
         return Result.ok(rows, "已标记打印");
     }
 
@@ -153,7 +155,7 @@ public class DeliveryNoteController {
         m.put("deliveryQty", deliveryQty);
         m.put("qty", deliveryQty);
         m.put("area", area);
-        m.put("amount", round2(area * boxUnitPrice));
+        m.put("amount", round2(deliveryQty * boxUnitPrice));
         m.put("remainingStock", remainingStock);
         m.put("otherDeliveredQty", totalDeliveryQty - deliveryQty);
         m.put("notes", d.getNotes());

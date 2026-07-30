@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 public class DeliveryNote {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true, nullable = false, length = 40)
+    @Column(length = 40)
     private String noteNo;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "sales_order_id")
