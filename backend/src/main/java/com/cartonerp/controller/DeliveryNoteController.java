@@ -120,7 +120,7 @@ public class DeliveryNoteController {
         m.put("deliveryStatus", deliveryNoteService.isPrinted(d) ? "已送货" : "未送货");
         m.put("status", deliveryNoteService.isPrinted(d) ? "已送货" : "未送货");
         m.put("salesOrderNo", salesOrder != null ? salesOrder.getOrderNo() : "");
-        m.put("orderDate", sourceOrderDate(purchaseOrder, salesOrder));
+        m.put("orderDate", sourceOrderDate(salesOrder));
         m.put("customerName", customer != null ? customer.getName() : "");
         m.put("customerContact", customer != null ? customer.getContact() : "");
         m.put("customerPhone", customer != null ? customer.getPhone() : "");
@@ -189,8 +189,7 @@ public class DeliveryNoteController {
         return note.getSalesOrder();
     }
 
-    private Object sourceOrderDate(PurchaseOrder purchaseOrder, SalesOrder salesOrder) {
-        if (purchaseOrder != null && purchaseOrder.getOrderDate() != null) return purchaseOrder.getOrderDate();
+    private Object sourceOrderDate(SalesOrder salesOrder) {
         return salesOrder != null && salesOrder.getCreatedAt() != null ? salesOrder.getCreatedAt().toLocalDate() : null;
     }
 

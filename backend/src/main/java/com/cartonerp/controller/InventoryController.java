@@ -163,7 +163,7 @@ public class InventoryController {
             m.put("id", summaryKey(productionOrder, purchaseOrder, salesOrder));
             m.put("deliveryStatus", remainingStock == 0 ? "已送货" : "未送货");
             m.put("salesOrderNo", salesOrder != null ? salesOrder.getOrderNo() : "");
-            m.put("orderDate", sourceOrderDate(purchaseOrder, salesOrder));
+            m.put("orderDate", sourceOrderDate(salesOrder));
             m.put("customerName", sourceCustomerName(productionOrder, purchaseOrder, salesOrder));
             m.put("productName", firstNonBlank(
                 productionOrder.getProductName(),
@@ -197,8 +197,7 @@ public class InventoryController {
             return m;
         }
 
-        private LocalDate sourceOrderDate(PurchaseOrder purchaseOrder, SalesOrder salesOrder) {
-            if (purchaseOrder != null && purchaseOrder.getOrderDate() != null) return purchaseOrder.getOrderDate();
+        private LocalDate sourceOrderDate(SalesOrder salesOrder) {
             return salesOrder != null && salesOrder.getCreatedAt() != null ? salesOrder.getCreatedAt().toLocalDate() : null;
         }
     }

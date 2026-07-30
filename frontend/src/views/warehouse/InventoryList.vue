@@ -26,7 +26,7 @@ const tableRef = ref(null)
 const columns = [
   { key: 'deliveryStatus', label: '送货状态', slot: 'deliveryStatus', width: 92, minWidth: 92 },
   { key: 'salesOrderNo', label: '销售单号', minWidth: 150 },
-  { key: 'orderDate', label: '下单日期', minWidth: 110 },
+  { key: 'orderDate', label: '接单日期', minWidth: 110 },
   { key: 'customerName', label: '客户', minWidth: 150 },
   { key: 'productName', label: '产品名称', minWidth: 140 },
   { key: 'spec', label: '规格', minWidth: 170 },

@@ -60,7 +60,7 @@ const COMMON_PRINT_FIELDS = [
 const columns = [
   { key: 'deliveryStatus', label: '送货状态', slot: 'deliveryStatus', width: 92, minWidth: 92 },
   { key: 'salesOrderNo', label: '销售单号', minWidth: 150 },
-  { key: 'orderDate', label: '下单日期', minWidth: 110 },
+  { key: 'orderDate', label: '接单日期', minWidth: 110 },
   { key: 'spec', label: '规格', minWidth: 170 },
   { key: 'customerUnitPrice', label: '客户平方单价', minWidth: 120 },
   { key: 'customerMaterial', label: '客户材质', minWidth: 120 },
@@ -86,7 +86,7 @@ const columns = [
 const fields = [
   { key: 'deliveryStatus', label: '送货状态', type: 'display' },
   { key: 'salesOrderNo', label: '销售单号', type: 'display' },
-  { key: 'orderDate', label: '下单日期', type: 'display' },
+  { key: 'orderDate', label: '接单日期', type: 'display' },
   { key: 'spec', label: '规格', type: 'display' },
   { key: 'customerUnitPrice', label: '客户平方单价', type: 'display' },
   { key: 'customerMaterial', label: '客户材质', type: 'display' },
