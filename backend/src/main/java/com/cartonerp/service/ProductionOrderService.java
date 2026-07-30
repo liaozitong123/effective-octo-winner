@@ -56,6 +56,11 @@ public class ProductionOrderService {
     private Optional<ProductionOrder> findExistingProductionOrder(PurchaseOrder purchaseOrder) {
         List<ProductionOrder> linkedOrders = productionOrderRepo.findByPurchaseOrderId(purchaseOrder.getId());
         if (!linkedOrders.isEmpty()) return Optional.of(linkedOrders.get(0));
+        SalesOrder salesOrder = purchaseOrder.getSalesOrder();
+        if (salesOrder != null && salesOrder.getId() != null) {
+            List<ProductionOrder> salesLinkedOrders = productionOrderRepo.findBySalesOrderId(salesOrder.getId());
+            if (!salesLinkedOrders.isEmpty()) return Optional.of(salesLinkedOrders.get(0));
+        }
         return Optional.empty();
     }
 

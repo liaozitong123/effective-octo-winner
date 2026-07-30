@@ -37,6 +37,7 @@ import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
 import FormDialog from '../../components/FormDialog.vue'
 import { purchaseOrdersAPI, suppliersAPI } from '../../api/purchase'
+import { salesOrdersAPI } from '../../api/sales'
 import { STITCH_OPTIONS, applyBoardCalculation } from '../../utils/boardCalculation'
 
 const tableRef = ref(null), dialogVisible = ref(false), editId = ref(null), editData = ref({})
@@ -44,7 +45,18 @@ const signFilter = ref('all')
 const unsignedCount = ref(0)
 const unsignedTotalArea = ref(0)
 const signedTotalArea = ref(0)
+const salesOrderOptions = ref([])
 const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱', '不用封口']
+const NUMBER_FIELDS = [
+  'qty', 'unitPrice', 'totalAmount', 'boardLength', 'boardWidth', 'boardQty', 'cutCount',
+  'boardArea', 'totalArea', 'materialBasePrice', 'discountRate', 'boardUnitPrice',
+  'profitRate', 'boardAmount', 'actualQty', 'actualAmount',
+]
+const READONLY_PAYLOAD_FIELDS = [
+  'id', 'orderNo', 'salesOrderNo', 'customerId', 'customerName', 'supplierId', 'supplierName',
+  'createdAt', 'expectedDate', 'status', 'signStatus', 'signDate', 'actualQty', 'actualAmount',
+  'acceptanceNotes', 'signer',
+]
 const columns = [
   { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'salesOrderNo', label: '销售订单号' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
@@ -65,6 +77,7 @@ const columns = [
   { key: 'productionStatus', label: '生产备注' },
 ]
 const fields = [
+  { key: 'salesOrderId', label: '销售订单号', type: 'select', optionsApi: loadSalesOrderOptions, labelKey: 'orderNo', required: true },
   { key: 'unitPrice', label: '客户平方单价', type: 'display' },
   { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
   { key: 'orderDate', label: '下单日期', type: 'date', required: true },
@@ -99,10 +112,61 @@ function shouldAutoBoardUnitPrice(data, changedKey) {
 function calcForm(data, changedKey) {
   return applyBoardCalculation(data, { autoBoardUnitPrice: shouldAutoBoardUnitPrice(data, changedKey) })
 }
-function onFormChange(data, changedKey) { return calcForm(data, changedKey) }
+async function loadSalesOrderOptions() {
+  const res = await salesOrdersAPI.list({ page: 1, perPage: 500 })
+  salesOrderOptions.value = Array.isArray(res.data?.data) ? res.data.data : []
+  return salesOrderOptions.value
+}
+function toDateOnly(value) {
+  if (!value) return ''
+  return String(value).slice(0, 10)
+}
+function copySalesOrderToForm(data) {
+  const salesOrder = salesOrderOptions.value.find(item => Number(item.id) === Number(data.salesOrderId))
+  if (!salesOrder) return data
+  return {
+    ...data,
+    salesOrderNo: salesOrder.orderNo,
+    customerId: salesOrder.customerId || '',
+    customerName: salesOrder.customerName || '',
+    productName: salesOrder.productName || '',
+    materialName: salesOrder.productName || '',
+    spec: salesOrder.spec || '',
+    material: salesOrder.material || '',
+    boxType: salesOrder.boxType || '',
+    fluteType: salesOrder.fluteType || '',
+    productionStatus: salesOrder.productionStatus || data.productionStatus || '',
+    qty: salesOrder.qty ?? '',
+    unit: salesOrder.unit || data.unit || '个',
+    unitPrice: salesOrder.unitPrice ?? '',
+    orderDate: data.orderDate || toDateOnly(salesOrder.createdDate || salesOrder.createdAt),
+  }
+}
+function onFormChange(data, changedKey) {
+  const next = changedKey === 'salesOrderId' ? copySalesOrderToForm(data) : data
+  return calcForm(next, changedKey)
+}
+function normalizeNumber(value) {
+  if (value === '' || value === null || value === undefined) return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+function normalizePayload(data) {
+  const next = { ...data }
+  NUMBER_FIELDS.forEach(key => {
+    if (key in next) next[key] = normalizeNumber(next[key])
+  })
+  READONLY_PAYLOAD_FIELDS.forEach(key => delete next[key])
+  delete next.salesOrderId
+  return next
+}
 function toApiData(f) {
   const { realBoardLength, realBoardWidth, referenceCrease, referenceBoardQty, ...data } = calcForm(f)
-  return { ...data, supplier: f.supplierId ? { id: Number(f.supplierId) } : null }
+  return {
+    ...normalizePayload(data),
+    supplier: f.supplierId ? { id: Number(f.supplierId) } : null,
+    salesOrder: f.salesOrderId ? { id: Number(f.salesOrderId) } : null,
+  }
 }
 async function fetchData(p) {
   const res = await purchaseOrdersAPI.list({ ...p, signStatus: signFilter.value })
@@ -128,14 +192,23 @@ async function refreshSignSummary() {
 function applySignFilter() {
   tableRef.value?.doSearch()
 }
-function openAdd() { editId.value = null; editData.value = {}; dialogVisible.value = true }
+function openAdd() {
+  editId.value = null
+  editData.value = { salesOrderId: '', materialType: '纸板' }
+  dialogVisible.value = true
+}
 function displayDiscountRate(rate) {
   const value = Number(rate)
   return Number.isFinite(value) && value > 0 && value <= 2 ? value * 100 : rate
 }
 function openEdit(row) {
   editId.value = row.id
-  editData.value = { ...row, discountRate: displayDiscountRate(row.discountRate), supplierId: row.supplierId || '' }
+  editData.value = calcForm({
+    ...row,
+    discountRate: displayDiscountRate(row.discountRate),
+    supplierId: row.supplierId || '',
+    salesOrderId: row.salesOrderId || '',
+  })
   dialogVisible.value = true
 }
 async function handleDelete(row) {

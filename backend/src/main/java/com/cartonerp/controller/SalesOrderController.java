@@ -64,16 +64,7 @@ public class SalesOrderController {
         applyAmountCalculation(o);
         SalesOrder saved = repo.save(o);
 
-        // Auto-create purchase order
-        PurchaseOrder puo = new PurchaseOrder();
-        puo.setOrderNo(OrderNumberUtil.next("PO"));
-        copySalesFieldsToPurchase(saved, puo);
-        puo.setOrderDate(toCreatedDate(saved.getCreatedAt()));
-        puo.setMaterialType("纸板");
-        puo.setMaterialName(saved.getProductName());
-        if (saved.getCustomer() != null) puo.setCustomer(saved.getCustomer());
-        puo.setStatus("待收货");
-        purchaseOrderRepo.save(puo);
+        ensureLinkedPurchaseOrder(saved);
 
         return Result.ok(toMap(saved), "创建成功");
     }
@@ -109,15 +100,26 @@ public class SalesOrderController {
     }
 
     private void syncLinkedPurchaseOrders(SalesOrder updated) {
-        List<PurchaseOrder> linkedOrders = purchaseOrderRepo.findBySalesOrderId(updated.getId());
-        if (linkedOrders.isEmpty()) linkedOrders = findLegacyPurchaseOrders(updated);
+        PurchaseOrder savedPurchase = ensureLinkedPurchaseOrder(updated);
+        productionOrderService.createOrUpdateFromSignedPurchase(savedPurchase);
+    }
 
-        for (PurchaseOrder purchaseOrder : linkedOrders) {
-            copySalesFieldsToPurchase(updated, purchaseOrder);
-            if (purchaseOrder.getOrderDate() == null) purchaseOrder.setOrderDate(toCreatedDate(updated.getCreatedAt()));
-            PurchaseOrder savedPurchase = purchaseOrderRepo.save(purchaseOrder);
-            productionOrderService.createOrUpdateFromSignedPurchase(savedPurchase);
-        }
+    private PurchaseOrder ensureLinkedPurchaseOrder(SalesOrder salesOrder) {
+        PurchaseOrder purchaseOrder = resolveLinkedPurchaseOrder(salesOrder);
+        copySalesFieldsToPurchase(salesOrder, purchaseOrder);
+        return purchaseOrderRepo.save(purchaseOrder);
+    }
+
+    private PurchaseOrder resolveLinkedPurchaseOrder(SalesOrder salesOrder) {
+        List<PurchaseOrder> linkedOrders = purchaseOrderRepo.findBySalesOrderId(salesOrder.getId());
+        if (!linkedOrders.isEmpty()) return linkedOrders.get(0);
+
+        List<PurchaseOrder> legacyOrders = findLegacyPurchaseOrders(salesOrder);
+        if (!legacyOrders.isEmpty()) return legacyOrders.get(0);
+
+        PurchaseOrder purchaseOrder = new PurchaseOrder();
+        purchaseOrder.setOrderNo(OrderNumberUtil.next("PO"));
+        return purchaseOrder;
     }
 
     private void copySalesFieldsToPurchase(SalesOrder source, PurchaseOrder target) {
@@ -133,6 +135,10 @@ public class SalesOrderController {
         target.setQty(source.getQty());
         target.setUnit(source.getUnit());
         target.setUnitPrice(source.getUnitPrice());
+        if (target.getOrderDate() == null) target.setOrderDate(toCreatedDate(source.getCreatedAt()));
+        if (isBlank(target.getMaterialType())) target.setMaterialType("纸板");
+        if (isBlank(target.getMaterialName())) target.setMaterialName(source.getProductName());
+        if (isBlank(target.getStatus())) target.setStatus("待收货");
     }
 
     private List<PurchaseOrder> findLegacyPurchaseOrders(SalesOrder salesOrder) {
@@ -167,6 +173,10 @@ public class SalesOrderController {
 
     private String normalize(String value) {
         return value == null || value.isBlank() ? "" : value.trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private boolean sameOrderNumberStamp(String purchaseOrderNo, String salesOrderNo) {

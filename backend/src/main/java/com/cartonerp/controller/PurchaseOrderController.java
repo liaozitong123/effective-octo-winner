@@ -2,6 +2,7 @@ package com.cartonerp.controller;
 
 import com.cartonerp.common.Result;
 import com.cartonerp.entity.PurchaseOrder;
+import com.cartonerp.entity.SalesOrder;
 import com.cartonerp.repository.*;
 import com.cartonerp.service.ProductionOrderService;
 import com.cartonerp.service.ProductionRecordService;
@@ -15,6 +16,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -100,15 +102,20 @@ public class PurchaseOrderController {
     public Result<Map<String, Object>> create(@RequestBody PurchaseOrder o) {
         if (o.getSupplier() != null && o.getSupplier().getId() != null)
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(o::setSupplier);
+        SalesOrder salesOrder = resolveIncomingSalesOrder(o);
+        if (salesOrder == null) return Result.fail(400, "请选择销售订单");
+        if (!repo.findBySalesOrderId(salesOrder.getId()).isEmpty()) {
+            return Result.fail(400, "该销售订单已有关联采购单");
+        }
+        copySalesFieldsToPurchase(salesOrder, o);
+        ensurePurchaseDefaults(o, salesOrder);
         // Auto-generate order number: PO-YYYYMMDDHHmmss
         o.setOrderNo(OrderNumberUtil.next("PO"));
         applyBoardCalculation(o);
         PurchaseOrder saved = repo.save(o);
-        businessService.onPurchaseReceived(saved);
-        productionOrderService.createOrUpdateFromSignedPurchase(saved);
-        productionRecordService.ensureForReceivedPurchase(saved);
+        List<String> warnings = syncPurchaseSideEffects(saved, false);
 
-        return Result.ok(toMap(saved), "创建成功");
+        return Result.ok(toMap(saved), warnings.isEmpty() ? "创建成功" : "采购单已保存，自动同步未完全完成：" + String.join("；", warnings));
     }
 
     @PutMapping("/{id}")
@@ -119,6 +126,14 @@ public class PurchaseOrderController {
         if (o.getOrderNo() != null) ex.setOrderNo(o.getOrderNo());
         if (o.getSupplier() != null && o.getSupplier().getId() != null)
             supplierRepo.findById(o.getSupplier().getId()).ifPresent(ex::setSupplier);
+        SalesOrder salesOrder = resolveIncomingSalesOrder(o);
+        if (salesOrder != null) {
+            boolean linkedToAnotherPurchase = repo.findBySalesOrderId(salesOrder.getId()).stream()
+                .anyMatch(p -> p.getId() != null && !p.getId().equals(id));
+            if (linkedToAnotherPurchase) return Result.fail(400, "该销售订单已有关联采购单");
+            copySalesFieldsToPurchase(salesOrder, ex);
+            ensurePurchaseDefaults(ex, salesOrder);
+        }
         if (o.getMaterialType() != null) ex.setMaterialType(o.getMaterialType());
         if (o.getMaterialName() != null) ex.setMaterialName(o.getMaterialName());
         if (o.getSpec() != null) ex.setSpec(o.getSpec());
@@ -155,15 +170,23 @@ public class PurchaseOrderController {
         if (o.getProfitRate() != null) ex.setProfitRate(o.getProfitRate());
         if (o.getBoardAmount() != null) ex.setBoardAmount(o.getBoardAmount());
         if (o.getNotes() != null) ex.setNotes(o.getNotes());
+        SalesOrder linkedSalesOrder = salesOrder != null ? salesOrder : ex.getSalesOrder();
+        if (linkedSalesOrder != null) {
+            copySalesFieldsToPurchase(linkedSalesOrder, ex);
+            if (o.getProductionStatus() != null) {
+                ex.setProductionStatus(o.getProductionStatus());
+                linkedSalesOrder.setProductionStatus(o.getProductionStatus());
+                salesOrderRepo.save(linkedSalesOrder);
+            }
+        }
+        if (ex.getSalesOrder() != null) {
+            ensurePurchaseDefaults(ex, ex.getSalesOrder());
+        }
         applyBoardCalculation(ex);
         PurchaseOrder saved = repo.save(ex);
-        if (!wasReceived && "已收货".equals(saved.getStatus())) {
-            businessService.onPurchaseReceived(saved);
-        }
-        productionOrderService.createOrUpdateFromSignedPurchase(saved);
-        productionRecordService.ensureForReceivedPurchase(saved);
+        List<String> warnings = syncPurchaseSideEffects(saved, wasReceived);
 
-        return Result.ok(toMap(saved), "更新成功");
+        return Result.ok(toMap(saved), warnings.isEmpty() ? "更新成功" : "采购单已保存，自动同步未完全完成：" + String.join("；", warnings));
     }
 
     @PutMapping("/{id}/receipt")
@@ -180,7 +203,7 @@ public class PurchaseOrderController {
 
         applyBoardCalculation(ex);
         PurchaseOrder saved = repo.save(ex);
-        List<String> warnings = syncReceiptSideEffects(saved, wasReceived);
+        List<String> warnings = syncPurchaseSideEffects(saved, wasReceived);
 
         return Result.ok(toMap(saved), warnings.isEmpty() ? "收货信息已更新" : "收货信息已保存，自动同步未完全完成：" + String.join("；", warnings));
     }
@@ -324,6 +347,54 @@ public class PurchaseOrderController {
         o.setActualAmount(result.actualAmount());
     }
 
+    private SalesOrder resolveIncomingSalesOrder(PurchaseOrder purchaseOrder) {
+        if (purchaseOrder == null || purchaseOrder.getSalesOrder() == null || purchaseOrder.getSalesOrder().getId() == null) {
+            return null;
+        }
+        return salesOrderRepo.findById(purchaseOrder.getSalesOrder().getId()).orElse(null);
+    }
+
+    private void copySalesFieldsToPurchase(SalesOrder source, PurchaseOrder target) {
+        target.setSalesOrder(source);
+        target.setCustomer(source.getCustomer());
+        target.setProductName(source.getProductName());
+        target.setMaterialName(firstNonBlank(source.getProductName(), target.getMaterialName()));
+        target.setSpec(source.getSpec());
+        target.setMaterial(source.getMaterial());
+        target.setBoxType(source.getBoxType());
+        target.setFluteType(source.getFluteType());
+        target.setProductionStatus(source.getProductionStatus());
+        target.setQty(source.getQty());
+        target.setUnit(source.getUnit());
+        target.setUnitPrice(source.getUnitPrice());
+    }
+
+    private void ensurePurchaseDefaults(PurchaseOrder purchaseOrder, SalesOrder salesOrder) {
+        if (purchaseOrder.getOrderDate() == null && salesOrder != null) {
+            purchaseOrder.setOrderDate(toCreatedDate(salesOrder.getCreatedAt()));
+        }
+        if (isBlank(purchaseOrder.getMaterialType())) purchaseOrder.setMaterialType("纸板");
+        if (isBlank(purchaseOrder.getMaterialName())) {
+            purchaseOrder.setMaterialName(firstNonBlank(purchaseOrder.getProductName(), salesOrder != null ? salesOrder.getProductName() : null, purchaseOrder.getOrderNo()));
+        }
+        if (isBlank(purchaseOrder.getStatus())) purchaseOrder.setStatus("待收货");
+    }
+
+    private LocalDate toCreatedDate(LocalDateTime createdAt) {
+        return createdAt != null ? createdAt.toLocalDate() : LocalDate.now();
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) return value;
+        }
+        return "";
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
     private Double displayDiscountRate(Double rate) {
         return rate != null && rate > 0 && rate <= 2 ? rate * 100 : rate;
     }
@@ -367,7 +438,7 @@ public class PurchaseOrderController {
         }
     }
 
-    private List<String> syncReceiptSideEffects(PurchaseOrder saved, boolean wasReceived) {
+    private List<String> syncPurchaseSideEffects(PurchaseOrder saved, boolean wasReceived) {
         List<String> warnings = new ArrayList<>();
         if (!wasReceived && "已收货".equals(saved.getStatus())) {
             try {
