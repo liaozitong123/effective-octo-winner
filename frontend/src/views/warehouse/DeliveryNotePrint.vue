@@ -92,7 +92,6 @@
       </section>
 
       <section class="manual-row">
-        <div><span>备注：</span><strong>{{ value(note.notes) }}</strong></div>
         <div><span>司机：</span><strong>{{ value(note.driver) }}</strong></div>
         <div><span>开单人：</span><strong>{{ value(note.issuer) }}</strong></div>
         <div><span>业务员：</span><strong>{{ value(note.salesperson) }}</strong></div>
@@ -123,7 +122,6 @@ const notes = ref([])
 const printError = ref('')
 const printRedColumns = ref(true)
 const COMMON_PRINT_FIELDS = [
-  { key: 'notes', label: '备注' },
   { key: 'driver', label: '司机' },
   { key: 'deliveryDate', label: '送货日期' },
   { key: 'issuer', label: '开单人' },
@@ -453,7 +451,7 @@ onMounted(loadNote)
 
 .manual-row {
   display: grid;
-  grid-template-columns: 2fr repeat(5, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 2mm;
   width: 260mm;
   margin: 3mm auto 0;
