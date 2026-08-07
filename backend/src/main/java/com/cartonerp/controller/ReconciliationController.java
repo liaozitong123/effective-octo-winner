@@ -17,11 +17,18 @@ public class ReconciliationController {
 
     @GetMapping
     public Result<List<Reconciliation>> list(@RequestParam(defaultValue = "") String q,
+                                               @RequestParam(defaultValue = "") String partyType,
                                                @RequestParam(defaultValue = "1") int page,
                                                @RequestParam(defaultValue = "20") int perPage) {
         Specification<Reconciliation> spec = (root, query, cb) -> {
-            if (q.isEmpty()) return null;
-            return cb.like(root.get("partyName"), "%" + q + "%");
+            List<Predicate> predicates = new ArrayList<>();
+            if (!partyType.isEmpty()) {
+                predicates.add(cb.equal(root.get("partyType"), partyType));
+            }
+            if (!q.isEmpty()) {
+                predicates.add(cb.like(root.get("partyName"), "%" + q + "%"));
+            }
+            return predicates.isEmpty() ? null : cb.and(predicates.toArray(new Predicate[0]));
         };
         Page<Reconciliation> pg = repo.findAll(spec, PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "id")));
         return Result.okWithTotal(pg.getContent(), pg.getTotalElements());

@@ -17,12 +17,23 @@ public class PaymentController {
 
     @GetMapping
     public Result<List<Payment>> list(@RequestParam(defaultValue = "") String q,
+                                       @RequestParam(defaultValue = "") String paymentType,
+                                       @RequestParam(defaultValue = "") String partyType,
                                        @RequestParam(defaultValue = "1") int page,
                                        @RequestParam(defaultValue = "20") int perPage) {
         Specification<Payment> spec = (root, query, cb) -> {
-            if (q.isEmpty()) return null;
-            String p = "%" + q + "%";
-            return cb.or(cb.like(root.get("paymentNo"), p), cb.like(root.get("partyName"), p));
+            List<Predicate> predicates = new ArrayList<>();
+            if (!paymentType.isEmpty()) {
+                predicates.add(cb.equal(root.get("paymentType"), paymentType));
+            }
+            if (!partyType.isEmpty()) {
+                predicates.add(cb.equal(root.get("partyType"), partyType));
+            }
+            if (!q.isEmpty()) {
+                String p = "%" + q + "%";
+                predicates.add(cb.or(cb.like(root.get("paymentNo"), p), cb.like(root.get("partyName"), p)));
+            }
+            return predicates.isEmpty() ? null : cb.and(predicates.toArray(new Predicate[0]));
         };
         Page<Payment> pg = repo.findAll(spec, PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "id")));
         return Result.okWithTotal(pg.getContent(), pg.getTotalElements());

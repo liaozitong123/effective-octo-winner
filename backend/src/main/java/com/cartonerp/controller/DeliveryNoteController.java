@@ -21,12 +21,13 @@ public class DeliveryNoteController {
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
+                                                   @RequestParam(defaultValue = "") String month,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
         deliveryNoteService.syncPendingDeliveryNotes();
         List<Map<String, Object>> rows = repo.findAll(Sort.by(Sort.Direction.DESC, "id")).stream()
             .map(this::toMap)
-            .filter(row -> matches(row, q))
+            .filter(row -> matches(row, q, month))
             .toList();
         int safePerPage = Math.max(perPage, 1);
         int from = Math.min(Math.max(page - 1, 0) * safePerPage, rows.size());
@@ -175,7 +176,12 @@ public class DeliveryNoteController {
         return m;
     }
 
-    private boolean matches(Map<String, Object> row, String q) {
+    private boolean matches(Map<String, Object> row, String q, String month) {
+        if (month != null && !month.isBlank()) {
+            Object deliveryDate = row.get("deliveryDate");
+            String deliveryDateText = deliveryDate != null ? String.valueOf(deliveryDate) : "";
+            if (!deliveryDateText.startsWith(month.trim())) return false;
+        }
         if (q == null || q.isBlank()) return true;
         String keyword = q.trim().toLowerCase();
         return List.of("noteNo", "salesOrderNo", "customerName", "productName", "spec", "driver", "issuer", "salesperson").stream()

@@ -44,9 +44,10 @@
           </el-sub-menu>
           <el-sub-menu index="finance">
             <template #title><el-icon><Money /></el-icon><span>财务管理</span></template>
-            <el-menu-item index="/finance/reconciliation">对账单</el-menu-item>
-            <el-menu-item index="/finance/payments">付款/收款单</el-menu-item>
-            <el-menu-item index="/finance/profit">利润分析</el-menu-item>
+            <el-menu-item index="/finance/customer-reconciliation">客户对账单</el-menu-item>
+            <el-menu-item index="/finance/supplier-reconciliation">供应商对账单</el-menu-item>
+            <el-menu-item index="/finance/receivables">应收款</el-menu-item>
+            <el-menu-item index="/finance/payables">应付款</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -83,12 +84,14 @@ const isSidebarCollapsed = ref(false)
 const activeMenu = computed(() => route.path)
 const asideWidth = computed(() => isSidebarCollapsed.value ? '72px' : '232px')
 const pageTitle = computed(() => {
+  if (route.meta?.pageTitle) return route.meta.pageTitle
   const m = {
     '/dashboard': '仪表盘', '/sales/customers': '客户资料', '/sales/orders': '销售订单',
     '/production/orders': '生产单', '/production/records': '产量登记',
     '/production/progress': '生产进度', '/production/qrcode': '加工区二维码', '/purchase/suppliers': '供应商资料', '/purchase/orders': '采购单',
     '/warehouse/receipt': '收货/退货', '/warehouse/inventory': '库存汇总', '/warehouse/delivery': '送货/送货单',
-    '/finance/reconciliation': '对账单', '/finance/payments': '付款/收款单', '/finance/profit': '利润分析',
+    '/finance/customer-reconciliation': '客户对账单', '/finance/supplier-reconciliation': '供应商对账单',
+    '/finance/receivables': '应收款', '/finance/payables': '应付款', '/finance/profit': '利润分析',
   }
   return m[route.path] || ''
 })

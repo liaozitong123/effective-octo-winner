@@ -23,9 +23,14 @@ const routes = [
       { path: 'warehouse/receipt', name: 'GoodsReceipt', component: () => import('../views/warehouse/GoodsReceipt.vue') },
       { path: 'warehouse/delivery', name: 'DeliveryNotes', component: () => import('../views/warehouse/DeliveryNoteList.vue') },
       { path: 'warehouse/delivery/print', name: 'DeliveryNotePrint', component: () => import('../views/warehouse/DeliveryNotePrint.vue') },
-      { path: 'finance/reconciliation', name: 'Reconciliations', component: () => import('../views/finance/ReconciliationList.vue') },
-      { path: 'finance/payments', name: 'Payments', component: () => import('../views/finance/PaymentList.vue') },
+      { path: 'finance/customer-reconciliation', name: 'CustomerReconciliations', component: () => import('../views/finance/ReconciliationList.vue'), meta: { pageTitle: '客户对账单', partyType: 'customer' } },
+      { path: 'finance/customer-reconciliation/print', name: 'CustomerReconciliationPrint', component: () => import('../views/finance/CustomerReconciliationPrint.vue'), meta: { pageTitle: '客户对账单打印' } },
+      { path: 'finance/supplier-reconciliation', name: 'SupplierReconciliations', component: () => import('../views/finance/ReconciliationList.vue'), meta: { pageTitle: '供应商对账单', partyType: 'supplier' } },
+      { path: 'finance/receivables', name: 'Receivables', component: () => import('../views/finance/PaymentList.vue'), meta: { pageTitle: '应收款', paymentType: '收款', partyType: 'customer' } },
+      { path: 'finance/payables', name: 'Payables', component: () => import('../views/finance/PaymentList.vue'), meta: { pageTitle: '应付款', paymentType: '付款', partyType: 'supplier' } },
       { path: 'finance/profit', name: 'ProfitAnalysis', component: () => import('../views/finance/ProfitAnalysis.vue') },
+      { path: 'finance/reconciliation', redirect: '/finance/customer-reconciliation' },
+      { path: 'finance/payments', redirect: '/finance/receivables' },
     ]
   }
 ]
