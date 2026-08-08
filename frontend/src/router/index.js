@@ -26,6 +26,7 @@ const routes = [
       { path: 'finance/customer-reconciliation', name: 'CustomerReconciliations', component: () => import('../views/finance/ReconciliationList.vue'), meta: { pageTitle: '客户对账单', partyType: 'customer' } },
       { path: 'finance/customer-reconciliation/print', name: 'CustomerReconciliationPrint', component: () => import('../views/finance/CustomerReconciliationPrint.vue'), meta: { pageTitle: '客户对账单打印' } },
       { path: 'finance/supplier-reconciliation', name: 'SupplierReconciliations', component: () => import('../views/finance/ReconciliationList.vue'), meta: { pageTitle: '供应商对账单', partyType: 'supplier' } },
+      { path: 'finance/supplier-reconciliation/print', name: 'SupplierReconciliationPrint', component: () => import('../views/finance/SupplierReconciliationPrint.vue'), meta: { pageTitle: '供应商对账单打印' } },
       { path: 'finance/receivables', name: 'Receivables', component: () => import('../views/finance/PaymentList.vue'), meta: { pageTitle: '应收款', paymentType: '收款', partyType: 'customer' } },
       { path: 'finance/payables', name: 'Payables', component: () => import('../views/finance/PaymentList.vue'), meta: { pageTitle: '应付款', paymentType: '付款', partyType: 'supplier' } },
       { path: 'finance/profit', name: 'ProfitAnalysis', component: () => import('../views/finance/ProfitAnalysis.vue') },

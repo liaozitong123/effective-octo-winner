@@ -119,7 +119,7 @@ const props = defineProps({
   selectableRow: { type: Function, default: () => true },
 })
 
-const emit = defineEmits(['add', 'edit', 'delete', 'print', 'labelPrint', 'selection-change'])
+const emit = defineEmits(['add', 'edit', 'delete', 'print', 'labelPrint', 'selection-change', 'search-change'])
 
 const desktopTableRef = ref(null)
 const tableData = ref([])
@@ -161,7 +161,11 @@ async function loadData() {
   loading.value = false
 }
 
-function doSearch() { currentPage.value = 1; loadData() }
+function doSearch() {
+  currentPage.value = 1
+  emit('search-change', searchText.value)
+  loadData()
+}
 
 function rowKeyValue(row) {
   return row?.[props.rowKey]

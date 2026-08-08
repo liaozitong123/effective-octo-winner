@@ -35,14 +35,16 @@ public class PurchaseOrderController {
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
                                                    @RequestParam(defaultValue = "all") String signStatus,
+                                                   @RequestParam(defaultValue = "") String month,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
         List<Object> params = new ArrayList<>();
-        String where = buildListWhere(q, signStatus, params);
+        String where = buildListWhere(q, signStatus, month, params);
         Long total = jdbcTemplate.queryForObject(
             "select count(*) from purchase_orders po "
                 + "left join sales_orders so on po.sales_order_id = so.id "
                 + "left join customers c on po.customer_id = c.id "
+                + "left join suppliers s on po.supplier_id = s.id "
                 + where,
             Long.class,
             params.toArray()
@@ -210,11 +212,13 @@ public class PurchaseOrderController {
 
     @DeleteMapping("/{id}") public Result<?> delete(@PathVariable Long id) { repo.deleteById(id); return Result.ok(null, "删除成功"); }
 
-    private String buildListWhere(String q, String signStatus, List<Object> params) {
+    private String buildListWhere(String q, String signStatus, String month, List<Object> params) {
         List<String> clauses = new ArrayList<>();
         if (q != null && !q.isBlank()) {
             String p = "%" + q.trim() + "%";
-            clauses.add("(po.order_no like ? or po.material_name like ? or po.product_name like ? or so.order_no like ? or c.name like ?)");
+            clauses.add("(po.order_no like ? or po.material_name like ? or po.product_name like ? or so.order_no like ? or c.name like ? or s.name like ? or po.spec like ?)");
+            params.add(p);
+            params.add(p);
             params.add(p);
             params.add(p);
             params.add(p);
@@ -225,6 +229,12 @@ public class PurchaseOrderController {
             clauses.add("po.sign_date is not null");
         } else if ("unsigned".equals(signStatus)) {
             clauses.add("po.sign_date is null");
+        }
+        if (month != null && month.matches("\\d{4}-\\d{2}")) {
+            LocalDate start = LocalDate.parse(month + "-01");
+            clauses.add("po.sign_date >= ? and po.sign_date < ?");
+            params.add(start);
+            params.add(start.plusMonths(1));
         }
         return clauses.isEmpty() ? "" : " where " + String.join(" and ", clauses);
     }

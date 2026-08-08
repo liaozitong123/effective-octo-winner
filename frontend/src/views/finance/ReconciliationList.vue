@@ -1,13 +1,13 @@
 <template>
   <DataTable
-    v-if="isCustomerStatement"
     ref="tableRef"
-    :columns="customerColumns"
-    :fetchData="fetchCustomerData"
-    search-placeholder="搜索客户对账单..."
+    :columns="statementColumns"
+    :fetchData="fetchData"
+    :search-placeholder="searchPlaceholder"
     table-max-height="calc(100vh - 232px)"
     hideAdd
     hideActions
+    @search-change="handleSearchChange"
   >
     <template #toolbar-actions>
       <el-date-picker
@@ -20,54 +20,44 @@
         @change="handleMonthChange"
       />
       <el-button type="primary" plain :icon="Printer" @click="openPrint">打印对账单</el-button>
+      <el-button type="success" plain :icon="Download" @click="exportExcel">导出 Excel</el-button>
     </template>
+
     <template #deliveryStatus="{ row }">
-      <span :class="['delivery-status', row.deliveryStatus === '已送货' ? 'is-delivered' : 'is-undelivered']">
+      <span :class="['statement-status', row.deliveryStatus === '已送货' ? 'is-success' : 'is-warning']">
         {{ row.deliveryStatus }}
       </span>
     </template>
-  </DataTable>
 
-  <template v-else>
-    <DataTable
-      ref="tableRef"
-      :columns="supplierColumns"
-      :fetchData="fetchSupplierData"
-      :search-placeholder="searchPlaceholder"
-      @add="openAdd"
-      @edit="openEdit"
-      @delete="handleDelete"
-    >
-      <template #status="{ row }">
-        <el-tag :type="row.status === '已结清' ? 'success' : 'warning'" size="small">{{ row.status }}</el-tag>
-      </template>
-    </DataTable>
-    <FormDialog v-model="dialogVisible" :fields="fields" :isEdit="!!editId" :initialData="editData" :onSubmit="handleSubmit" />
-  </template>
+    <template #receiptStatus="{ row }">
+      <span :class="['statement-status', row.status === '已收货' ? 'is-success' : 'is-warning']">
+        {{ row.status || '待收货' }}
+      </span>
+    </template>
+  </DataTable>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Printer } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { Download, Printer } from '@element-plus/icons-vue'
+import * as XLSX from 'xlsx'
 import DataTable from '../../components/DataTable.vue'
-import FormDialog from '../../components/FormDialog.vue'
 import { deliveryNotesAPI } from '../../api/sales'
-import { reconciliationsAPI } from '../../api/finance'
+import { purchaseOrdersAPI } from '../../api/purchase'
 
 const route = useRoute()
 const router = useRouter()
 const tableRef = ref(null)
-const dialogVisible = ref(false)
-const editId = ref(null)
-const editData = ref({})
 const statementMonth = ref(currentMonth())
+const statementSearch = ref('')
 
 const fixedPartyType = computed(() => String(route.meta.partyType || ''))
 const isCustomerStatement = computed(() => fixedPartyType.value === 'customer')
 const pageTitle = computed(() => route.meta.pageTitle || '对账单')
 const searchPlaceholder = computed(() => `搜索${pageTitle.value}...`)
+const statementColumns = computed(() => isCustomerStatement.value ? customerColumns : supplierColumns)
 
 const customerColumns = [
   { key: 'deliveryStatus', label: '送货状态', slot: 'deliveryStatus', width: 92, minWidth: 92 },
@@ -92,72 +82,101 @@ const customerColumns = [
 ]
 
 const supplierColumns = [
-  { key: 'id', label: 'ID', width: 60 },
-  { key: 'partyName', label: '名称' },
-  { key: 'beginBalance', label: '期初余额' },
-  { key: 'currentAmount', label: '本期发生' },
-  { key: 'paidAmount', label: '已付/已收' },
-  { key: 'endBalance', label: '期末余额' },
-  { key: 'status', label: '状态', slot: 'status' },
+  { key: 'status', label: '收货状态', slot: 'receiptStatus', width: 92, minWidth: 92 },
+  { key: 'orderNo', label: '采购单号', minWidth: 150 },
+  { key: 'customerName', label: '客户', minWidth: 130 },
+  { key: 'spec', label: '规格', minWidth: 170 },
+  { key: 'qty', label: '下单数量', minWidth: 100 },
+  { key: 'orderDate', label: '下单日期', minWidth: 110 },
+  { key: 'supplierName', label: '供应商', minWidth: 150 },
+  { key: 'productionMaterial', label: '生产材质', minWidth: 120 },
+  { key: 'fluteType', label: '楞别', minWidth: 90 },
+  { key: 'boardLength', label: '纸板长度', minWidth: 110 },
+  { key: 'boardWidth', label: '纸板宽度', minWidth: 110 },
+  { key: 'boardQty', label: '纸板数量', minWidth: 110 },
+  { key: 'cutCount', label: '开数', width: 72, minWidth: 72 },
+  { key: 'boardArea', label: '纸板面积', minWidth: 110 },
+  { key: 'totalArea', label: '总面积', minWidth: 110 },
+  { key: 'materialBasePrice', label: '材质基价', minWidth: 110 },
+  { key: 'discountRate', label: '折率', minWidth: 90 },
+  { key: 'boardUnitPrice', label: '纸板平方单价', minWidth: 130 },
+  { key: 'profitRate', label: '毛利率', minWidth: 100 },
+  { key: 'boardAmount', label: '纸板金额', minWidth: 110 },
+  { key: 'actualQty', label: '实收数量', minWidth: 100 },
+  { key: 'actualAmount', label: '实收金额', minWidth: 110 },
+  { key: 'signDate', label: '签收日期', minWidth: 110 },
+  { key: 'acceptanceNotes', label: '验收说明', minWidth: 160 },
+  { key: 'signer', label: '签收人', minWidth: 100 },
 ]
 
-const fields = [
-  { key: 'partyId', label: '往来方ID', type: 'number', required: true },
-  { key: 'partyName', label: '往来方名称' },
-  { key: 'periodStart', label: '期间开始', type: 'date' },
-  { key: 'periodEnd', label: '期间结束', type: 'date' },
-  { key: 'beginBalance', label: '期初余额', type: 'number' },
-  { key: 'currentAmount', label: '本期发生', type: 'number' },
-  { key: 'paidAmount', label: '已付/已收', type: 'number' },
-  { key: 'endBalance', label: '期末余额', type: 'number' },
-  { key: 'status', label: '状态', type: 'select', options: ['未结清', '已结清'] },
-]
-
-function fetchCustomerData(params) {
-  return deliveryNotesAPI.list({ ...params, month: statementMonth.value })
-}
-
-function fetchSupplierData(params) {
-  return reconciliationsAPI.list({ ...params, partyType: fixedPartyType.value })
+function fetchData(params) {
+  if (isCustomerStatement.value) {
+    return deliveryNotesAPI.list({ ...params, month: statementMonth.value })
+  }
+  return purchaseOrdersAPI.list({ ...params, month: statementMonth.value, signStatus: 'signed' })
 }
 
 function handleMonthChange() {
   tableRef.value?.loadData()
 }
 
+function handleSearchChange(value) {
+  statementSearch.value = String(value || '').trim()
+}
+
 function openPrint() {
   router.push({
-    path: '/finance/customer-reconciliation/print',
-    query: { month: statementMonth.value },
+    path: isCustomerStatement.value ? '/finance/customer-reconciliation/print' : '/finance/supplier-reconciliation/print',
+    query: {
+      month: statementMonth.value,
+      ...(statementSearch.value ? { q: statementSearch.value } : {}),
+    },
   })
 }
 
-function openAdd() {
-  editId.value = null
-  editData.value = { partyType: fixedPartyType.value }
-  dialogVisible.value = true
-}
+async function exportExcel() {
+  try {
+    const rows = await loadExportRows()
+    if (!rows.length) {
+      ElMessage.warning('当前筛选条件下没有可导出的数据')
+      return
+    }
 
-function openEdit(row) {
-  editId.value = row.id
-  editData.value = { ...row, partyType: fixedPartyType.value }
-  dialogVisible.value = true
-}
+    const headers = statementColumns.value.map(column => column.label)
+    const data = rows.map(row => statementColumns.value.map(column => exportValue(row[column.key])))
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data])
+    worksheet['!cols'] = statementColumns.value.map(column => ({
+      wch: Math.max(10, Math.min(24, String(column.label || '').length * 2 + 4)),
+    }))
 
-async function handleDelete(row) {
-  await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
-  await reconciliationsAPI.delete(row.id)
-  tableRef.value.loadData()
-}
-
-async function handleSubmit(form) {
-  const payload = { ...form, partyType: fixedPartyType.value }
-  if (editId.value) {
-    await reconciliationsAPI.update(editId.value, payload)
-  } else {
-    await reconciliationsAPI.create(payload)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, isCustomerStatement.value ? '客户对账单' : '供应商对账单')
+    XLSX.writeFile(workbook, `${pageTitle.value}_${statementMonth.value}${statementSearch.value ? `_${sanitizeFileName(statementSearch.value)}` : ''}.xlsx`)
+    ElMessage.success(`已导出 ${rows.length} 条明细`)
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.message || '导出 Excel 失败')
   }
-  tableRef.value.loadData()
+}
+
+async function loadExportRows() {
+  const params = {
+    q: statementSearch.value,
+    month: statementMonth.value,
+    page: 1,
+    perPage: 9999,
+  }
+  const res = isCustomerStatement.value
+    ? await deliveryNotesAPI.list(params)
+    : await purchaseOrdersAPI.list({ ...params, signStatus: 'signed' })
+  return res.data?.data || []
+}
+
+function exportValue(value) {
+  return value === null || value === undefined ? '' : value
+}
+
+function sanitizeFileName(value) {
+  return String(value).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40)
 }
 
 function currentMonth() {
@@ -169,15 +188,15 @@ function currentMonth() {
 </script>
 
 <style scoped>
-.delivery-status {
+.statement-status {
   font-weight: 800;
 }
 
-.delivery-status.is-delivered {
+.statement-status.is-success {
   color: #16a34a;
 }
 
-.delivery-status.is-undelivered {
+.statement-status.is-warning {
   color: #dc2626;
 }
 </style>

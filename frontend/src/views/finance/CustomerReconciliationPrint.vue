@@ -139,6 +139,7 @@ const printError = ref('')
 const rows = ref([])
 
 const month = computed(() => normalizeMonth(route.query.month) || currentMonth())
+const searchText = computed(() => String(route.query.q || '').trim())
 const displayMonth = computed(() => month.value.replace('-', '年') + '月')
 
 const groupedRows = computed(() => {
@@ -220,7 +221,12 @@ async function loadRows() {
   loading.value = true
   printError.value = ''
   try {
-    const res = await deliveryNotesAPI.list({ month: month.value, page: 1, perPage: 9999 })
+    const res = await deliveryNotesAPI.list({
+      q: searchText.value,
+      month: month.value,
+      page: 1,
+      perPage: 9999,
+    })
     rows.value = res.data?.data || []
   } catch (error) {
     printError.value = error?.response?.data?.message || '加载对账明细失败'
