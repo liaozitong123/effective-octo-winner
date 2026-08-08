@@ -89,7 +89,7 @@ const rules = reactive({})
 const asyncOptions = reactive({})  // key → [{value, label}]
 const lastChangedKey = ref('')
 const imageInputRefs = {}
-const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth', 'inboundAmount', 'area', 'amount', 'remainingStock']
+const displayKeys = ['singleArea', 'boxUnitPrice', 'totalAmount', 'boardArea', 'totalArea', 'boardAmount', 'actualAmount', 'orderArea', 'realBoardLength', 'realBoardWidth', 'inboundAmount', 'area', 'amount', 'remainingStock', 'receivableAmount', 'unreceivedAmount', 'payableAmount', 'unpaidAmount']
 
 function displayText(value, field = {}) {
   if (value === '' || value === null || value === undefined) return '-'

@@ -51,7 +51,7 @@
             <el-button size="small" type="primary" link @click.stop="$emit('edit', scope.row)">编辑</el-button>
             <el-button size="small" type="success" link v-if="showPrint" @click.stop="$emit('print', scope.row)">打印</el-button>
             <el-button size="small" type="warning" link v-if="showLabelPrint" @click.stop="$emit('labelPrint', scope.row)">标签</el-button>
-            <el-button size="small" type="danger" link @click.stop="$emit('delete', scope.row)">删除</el-button>
+            <el-button v-if="!hideDelete" size="small" type="danger" link @click.stop="$emit('delete', scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -78,7 +78,7 @@
             <el-button size="small" type="primary" link @click.stop="$emit('edit', row)">编辑</el-button>
             <el-button size="small" type="success" link v-if="showPrint" @click.stop="$emit('print', row)">打印</el-button>
             <el-button size="small" type="warning" link v-if="showLabelPrint" @click.stop="$emit('labelPrint', row)">标签</el-button>
-            <el-button size="small" type="danger" link @click.stop="$emit('delete', row)">删除</el-button>
+            <el-button v-if="!hideDelete" size="small" type="danger" link @click.stop="$emit('delete', row)">删除</el-button>
           </div>
         </div>
       </div>
@@ -112,6 +112,7 @@ const props = defineProps({
   showPrint: { type: Boolean, default: false },
   showLabelPrint: { type: Boolean, default: false },
   hideAdd: { type: Boolean, default: false },
+  hideDelete: { type: Boolean, default: false },
   hideActions: { type: Boolean, default: false },
   tableMaxHeight: { type: [String, Number], default: 'calc(100vh - 232px)' },
   selectable: { type: Boolean, default: false },
