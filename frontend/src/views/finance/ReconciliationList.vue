@@ -46,6 +46,7 @@ import * as XLSX from 'xlsx'
 import DataTable from '../../components/DataTable.vue'
 import { deliveryNotesAPI } from '../../api/sales'
 import { purchaseOrdersAPI } from '../../api/purchase'
+import { normalizeCustomerDeliveryRows } from '../../utils/reconciliation'
 
 const route = useRoute()
 const router = useRouter()
@@ -109,9 +110,16 @@ const supplierColumns = [
   { key: 'signer', label: '签收人', minWidth: 100 },
 ]
 
-function fetchData(params) {
+async function fetchData(params) {
   if (isCustomerStatement.value) {
-    return deliveryNotesAPI.list({ ...params, month: statementMonth.value })
+    const response = await deliveryNotesAPI.list({ ...params, month: statementMonth.value })
+    return {
+      ...response,
+      data: {
+        ...response.data,
+        data: normalizeCustomerDeliveryRows(response.data?.data),
+      },
+    }
   }
   return purchaseOrdersAPI.list({ ...params, month: statementMonth.value, signStatus: 'signed' })
 }
@@ -168,7 +176,9 @@ async function loadExportRows() {
   const res = isCustomerStatement.value
     ? await deliveryNotesAPI.list(params)
     : await purchaseOrdersAPI.list({ ...params, signStatus: 'signed' })
-  return res.data?.data || []
+  return isCustomerStatement.value
+    ? normalizeCustomerDeliveryRows(res.data?.data)
+    : res.data?.data || []
 }
 
 function exportValue(value) {

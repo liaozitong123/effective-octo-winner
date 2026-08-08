@@ -1,6 +1,6 @@
 <template>
   <div>
-    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索订单号/客户/产品名..."
+    <DataTable ref="tableRef" :columns="columns" :fetchData="fetchData" search-placeholder="搜索销售单号/客户/产品名..."
       @add="openAdd" @edit="openEdit" @delete="handleDelete">
       <template #notes="{ row }">
         <img v-if="isImageNote(row.notes)" :src="row.notes" class="note-thumb" alt="备注图片" />
@@ -29,7 +29,7 @@ const FLUTE_TYPE_OPTIONS = ['BC', 'EBC', 'EB', 'E', 'B', 'C']
 const PRODUCTION_STATUS_OPTIONS = ['打钉', '粘箱', '不用封口']
 
 const columns = [
-  { key: 'orderNo', label: '订单号' }, { key: 'createdDate', label: '接单日期' },
+  { key: 'orderNo', label: '销售单号' }, { key: 'createdDate', label: '接单日期' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
   { key: 'spec', label: '规格(cm)' }, { key: 'material', label: '客户材质' },
   { key: 'boxType', label: '盒式' }, { key: 'fluteType', label: '楞别' }, { key: 'singleArea', label: '单个面积' }, { key: 'qty', label: '下单数量' },

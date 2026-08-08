@@ -103,13 +103,13 @@ public class DeliveryNoteController {
         SalesOrder salesOrder = sourceSalesOrder(d, productionOrder, purchaseOrder);
         int inboundQty = deliveryNoteService.inboundQtyForOrder(productionOrder, salesOrder);
         int deliveryQty = d.getQty() != null ? d.getQty() : 0;
-        double customerUnitPrice = firstNumber(
+        double customerUnitPrice = firstPositiveNumber(
             salesOrder != null ? salesOrder.getUnitPrice() : null,
             purchaseOrder != null ? purchaseOrder.getUnitPrice() : null,
             productionOrder != null ? productionOrder.getUnitPrice() : null
         );
-        double singleArea = firstNumber(salesOrder != null ? salesOrder.getSingleArea() : null);
-        double boxUnitPrice = firstNumber(salesOrder != null ? salesOrder.getBoxUnitPrice() : null);
+        double singleArea = firstPositiveNumber(salesOrder != null ? salesOrder.getSingleArea() : null);
+        double boxUnitPrice = firstPositiveNumber(salesOrder != null ? salesOrder.getBoxUnitPrice() : null);
         if (boxUnitPrice <= 0 && customerUnitPrice > 0 && singleArea > 0) {
             boxUnitPrice = round2(customerUnitPrice * singleArea);
         }
@@ -221,6 +221,16 @@ public class DeliveryNoteController {
             if (value != null) return value.doubleValue();
         }
         return 0.0;
+    }
+
+    private double firstPositiveNumber(Number... values) {
+        double fallback = 0.0;
+        for (Number value : values) {
+            if (value == null) continue;
+            fallback = value.doubleValue();
+            if (fallback > 0) return fallback;
+        }
+        return fallback;
     }
 
     private double round2(double value) {

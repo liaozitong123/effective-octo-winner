@@ -131,6 +131,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { deliveryNotesAPI } from '../../api/sales'
+import { normalizeCustomerDeliveryRows } from '../../utils/reconciliation'
 
 const route = useRoute()
 const router = useRouter()
@@ -227,7 +228,7 @@ async function loadRows() {
       page: 1,
       perPage: 9999,
     })
-    rows.value = res.data?.data || []
+    rows.value = normalizeCustomerDeliveryRows(res.data?.data)
   } catch (error) {
     printError.value = error?.response?.data?.message || '加载对账明细失败'
   }

@@ -58,7 +58,7 @@ const READONLY_PAYLOAD_FIELDS = [
   'acceptanceNotes', 'signer',
 ]
 const columns = [
-  { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'salesOrderNo', label: '销售订单号' },
+  { key: 'signStatus', label: '状态', slot: 'signStatus', width: 82 }, { key: 'orderNo', label: '采购单号' }, { key: 'salesOrderNo', label: '销售单号' },
   { key: 'customerName', label: '客户' }, { key: 'productName', label: '产品名称' },
   { key: 'supplierName', label: '供应商' }, { key: 'orderDate', label: '下单日期' }, { key: 'spec', label: '规格(cm)', minWidth: 170 },
   { key: 'productionMaterial', label: '生产材质' }, { key: 'fluteType', label: '楞别' },
@@ -77,7 +77,7 @@ const columns = [
   { key: 'productionStatus', label: '生产备注' },
 ]
 const fields = [
-  { key: 'salesOrderId', label: '销售订单号', type: 'select', optionsApi: loadSalesOrderOptions, labelKey: 'orderNo', required: true },
+  { key: 'salesOrderId', label: '销售单号', type: 'select', optionsApi: loadSalesOrderOptions, labelKey: 'orderNo', required: true },
   { key: 'unitPrice', label: '客户平方单价', type: 'display' },
   { key: 'supplierId', label: '供应商', type: 'select', optionsApi: () => suppliersAPI.list({ page:1, perPage:200 }).then(r => r.data.data), labelKey: 'name' },
   { key: 'orderDate', label: '下单日期', type: 'date', required: true },
