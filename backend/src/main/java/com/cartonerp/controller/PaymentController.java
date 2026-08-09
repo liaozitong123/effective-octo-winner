@@ -54,13 +54,14 @@ public class PaymentController {
                           @RequestParam(defaultValue = "") String paymentType,
                           @RequestParam(defaultValue = "") String partyType,
                           @RequestParam(defaultValue = "all") String settlementStatus,
+                          @RequestParam(defaultValue = "") String month,
                           @RequestParam(defaultValue = "1") int page,
                           @RequestParam(defaultValue = "20") int perPage) {
         if (isCustomerReceivable(paymentType, partyType)) {
-            return listCustomerReceivables(q, settlementStatus, page, perPage);
+            return listCustomerReceivables(q, settlementStatus, month, page, perPage);
         }
         if (isSupplierPayable(paymentType, partyType)) {
-            return listSupplierPayables(q, settlementStatus, page, perPage);
+            return listSupplierPayables(q, settlementStatus, month, page, perPage);
         }
 
         Specification<Payment> spec = (root, query, cb) -> {
@@ -85,7 +86,8 @@ public class PaymentController {
     public Result<Map<String, Object>> summary(@RequestParam(defaultValue = "") String q,
                                                @RequestParam(defaultValue = "") String paymentType,
                                                @RequestParam(defaultValue = "") String partyType,
-                                               @RequestParam(defaultValue = "all") String settlementStatus) {
+                                               @RequestParam(defaultValue = "all") String settlementStatus,
+                                               @RequestParam(defaultValue = "") String month) {
         Map<String, Object> summary = new LinkedHashMap<>();
         if (isCustomerReceivable(paymentType, partyType)) {
             syncCustomerReceivables();
@@ -93,6 +95,7 @@ public class PaymentController {
                 .map(this::toReceivableMap)
                 .filter(row -> matchesReceivable(row, q))
                 .filter(row -> matchesSettlement(row, "unreceivedAmount", settlementStatus))
+                .filter(row -> matchesMonth(row, "deliveryDate", month))
                 .mapToDouble(row -> rowNumber(row, "unreceivedAmount"))
                 .sum();
             summary.put("unreceivedAmount", round2(total));
@@ -105,6 +108,7 @@ public class PaymentController {
                 .map(this::toPayableMap)
                 .filter(row -> matchesPayable(row, q))
                 .filter(row -> matchesSettlement(row, "unpaidAmount", settlementStatus))
+                .filter(row -> matchesMonth(row, "signDate", month))
                 .mapToDouble(row -> rowNumber(row, "unpaidAmount"))
                 .sum();
             summary.put("unpaidAmount", round2(total));
@@ -156,12 +160,13 @@ public class PaymentController {
         return Result.ok(null, "删除成功");
     }
 
-    private Result<List<Map<String, Object>>> listCustomerReceivables(String q, String settlementStatus, int page, int perPage) {
+    private Result<List<Map<String, Object>>> listCustomerReceivables(String q, String settlementStatus, String month, int page, int perPage) {
         syncCustomerReceivables();
         List<Map<String, Object>> rows = repo.findByPaymentTypeAndPartyType(RECEIPT_TYPE, CUSTOMER_PARTY).stream()
             .map(this::toReceivableMap)
             .filter(row -> matchesReceivable(row, q))
             .filter(row -> matchesSettlement(row, "unreceivedAmount", settlementStatus))
+            .filter(row -> matchesMonth(row, "deliveryDate", month))
             .sorted(this::compareReceivableRows)
             .toList();
 
@@ -171,13 +176,14 @@ public class PaymentController {
         return Result.okWithTotal(rows.subList(from, to), rows.size());
     }
 
-    private Result<List<Map<String, Object>>> listSupplierPayables(String q, String settlementStatus, int page, int perPage) {
+    private Result<List<Map<String, Object>>> listSupplierPayables(String q, String settlementStatus, String month, int page, int perPage) {
         syncSupplierPayables();
         List<Map<String, Object>> rows = repo.findByPaymentTypeAndPartyType(PAYMENT_TYPE, SUPPLIER_PARTY).stream()
             .filter(payment -> !trim(payment.getPurchaseOrderNo()).isEmpty())
             .map(this::toPayableMap)
             .filter(row -> matchesPayable(row, q))
             .filter(row -> matchesSettlement(row, "unpaidAmount", settlementStatus))
+            .filter(row -> matchesMonth(row, "signDate", month))
             .sorted(this::comparePayableRows)
             .toList();
 
@@ -330,6 +336,12 @@ public class PaymentController {
         if ("unsettled".equals(settlementStatus)) return remaining > 0;
         if ("settled".equals(settlementStatus)) return remaining <= 0;
         return true;
+    }
+
+    private boolean matchesMonth(Map<String, Object> row, String dateKey, String month) {
+        if (month == null || !month.matches("\\d{4}-\\d{2}")) return true;
+        Object value = row.get(dateKey);
+        return value != null && String.valueOf(value).startsWith(month);
     }
 
     private int compareReceivableRows(Map<String, Object> a, Map<String, Object> b) {

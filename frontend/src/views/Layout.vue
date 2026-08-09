@@ -48,6 +48,7 @@
             <el-menu-item index="/finance/supplier-reconciliation">供应商对账单</el-menu-item>
             <el-menu-item index="/finance/receivables">应收款</el-menu-item>
             <el-menu-item index="/finance/payables">应付款</el-menu-item>
+            <el-menu-item index="/finance/profit">利润分析</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>

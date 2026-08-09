@@ -15,11 +15,19 @@ public class ProfitAnalysisDTO {
         private double revenue;
         private double cost;
         private double profit;
-        public MonthlyData(int m, double r, double c, double p) { month = m; revenue = r; cost = c; profit = p; }
+        private double profitRate;
+        public MonthlyData(int m, double r, double c, double p) {
+            month = m;
+            revenue = r;
+            cost = c;
+            profit = p;
+            profitRate = r > 0 ? Math.round(p / r * 10000.0) / 100.0 : 0.0;
+        }
         public int getMonth() { return month; }
         public double getRevenue() { return revenue; }
         public double getCost() { return cost; }
         public double getProfit() { return profit; }
+        public double getProfitRate() { return profitRate; }
     }
 
     public double getRevenue() { return revenue; }

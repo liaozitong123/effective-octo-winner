@@ -19,11 +19,22 @@
       @search-change="handleSearchChange"
     >
       <template #toolbar-actions>
+        <el-date-picker
+          v-if="isAutoPayment"
+          v-model="paymentMonth"
+          type="month"
+          format="YYYY-MM"
+          value-format="YYYY-MM"
+          placeholder="选择月份"
+          clearable
+          class="payment-month-filter"
+          @change="handleFilterChange"
+        />
         <el-select
           v-if="isAutoPayment"
           v-model="settlementStatus"
           class="settlement-filter"
-          @change="handleSettlementChange"
+          @change="handleFilterChange"
         >
           <el-option label="全部" value="all" />
           <el-option :label="isReceivable ? '未收款' : '未付款'" value="unsettled" />
@@ -58,6 +69,7 @@ const editData = ref({})
 const summaryAmount = ref(0)
 const summarySearch = ref('')
 const settlementStatus = ref('all')
+const paymentMonth = ref('')
 
 const fixedPaymentType = computed(() => String(route.meta.paymentType || ''))
 const fixedPartyType = computed(() => String(route.meta.partyType || ''))
@@ -156,6 +168,7 @@ function fetchData(params) {
     paymentType: fixedPaymentType.value,
     partyType: fixedPartyType.value,
     settlementStatus: settlementStatus.value,
+    month: paymentMonth.value,
   })
 }
 
@@ -169,6 +182,7 @@ async function loadSummary() {
     paymentType: fixedPaymentType.value,
     partyType: fixedPartyType.value,
     settlementStatus: settlementStatus.value,
+    month: paymentMonth.value,
   })
   const data = res.data?.data || {}
   summaryAmount.value = isReceivable.value ? toNumber(data.unreceivedAmount) : toNumber(data.unpaidAmount)
@@ -179,7 +193,7 @@ function handleSearchChange(value) {
   loadSummary()
 }
 
-function handleSettlementChange() {
+function handleFilterChange() {
   tableRef.value?.loadData()
   loadSummary()
 }
@@ -262,6 +276,7 @@ watch(() => route.path, () => {
   editData.value = {}
   summarySearch.value = ''
   settlementStatus.value = 'all'
+  paymentMonth.value = ''
   loadSummary()
   tableRef.value?.loadData()
 })
@@ -308,5 +323,9 @@ onMounted(loadSummary)
 
 .settlement-filter {
   width: 132px;
+}
+
+.payment-month-filter {
+  width: 140px;
 }
 </style>
