@@ -1,6 +1,7 @@
 <template>
   <DataTable
     ref="tableRef"
+    :key="fixedPartyType"
     :columns="statementColumns"
     :fetchData="fetchData"
     :search-placeholder="searchPlaceholder"
@@ -38,7 +39,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Download, Printer } from '@element-plus/icons-vue'
@@ -59,6 +60,10 @@ const isCustomerStatement = computed(() => fixedPartyType.value === 'customer')
 const pageTitle = computed(() => route.meta.pageTitle || '对账单')
 const searchPlaceholder = computed(() => `搜索${pageTitle.value}...`)
 const statementColumns = computed(() => isCustomerStatement.value ? customerColumns : supplierColumns)
+
+watch(fixedPartyType, () => {
+  statementSearch.value = ''
+})
 
 const customerColumns = [
   { key: 'deliveryStatus', label: '送货状态', slot: 'deliveryStatus', width: 92, minWidth: 92 },
