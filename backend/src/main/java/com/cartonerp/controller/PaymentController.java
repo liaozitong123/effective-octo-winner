@@ -53,13 +53,14 @@ public class PaymentController {
     public Result<?> list(@RequestParam(defaultValue = "") String q,
                           @RequestParam(defaultValue = "") String paymentType,
                           @RequestParam(defaultValue = "") String partyType,
+                          @RequestParam(defaultValue = "all") String settlementStatus,
                           @RequestParam(defaultValue = "1") int page,
                           @RequestParam(defaultValue = "20") int perPage) {
         if (isCustomerReceivable(paymentType, partyType)) {
-            return listCustomerReceivables(q, page, perPage);
+            return listCustomerReceivables(q, settlementStatus, page, perPage);
         }
         if (isSupplierPayable(paymentType, partyType)) {
-            return listSupplierPayables(q, page, perPage);
+            return listSupplierPayables(q, settlementStatus, page, perPage);
         }
 
         Specification<Payment> spec = (root, query, cb) -> {
@@ -78,6 +79,39 @@ public class PaymentController {
         };
         Page<Payment> pg = repo.findAll(spec, PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "id")));
         return Result.okWithTotal(pg.getContent(), pg.getTotalElements());
+    }
+
+    @GetMapping("/summary")
+    public Result<Map<String, Object>> summary(@RequestParam(defaultValue = "") String q,
+                                               @RequestParam(defaultValue = "") String paymentType,
+                                               @RequestParam(defaultValue = "") String partyType,
+                                               @RequestParam(defaultValue = "all") String settlementStatus) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        if (isCustomerReceivable(paymentType, partyType)) {
+            syncCustomerReceivables();
+            double total = repo.findByPaymentTypeAndPartyType(RECEIPT_TYPE, CUSTOMER_PARTY).stream()
+                .map(this::toReceivableMap)
+                .filter(row -> matchesReceivable(row, q))
+                .filter(row -> matchesSettlement(row, "unreceivedAmount", settlementStatus))
+                .mapToDouble(row -> rowNumber(row, "unreceivedAmount"))
+                .sum();
+            summary.put("unreceivedAmount", round2(total));
+            return Result.ok(summary);
+        }
+        if (isSupplierPayable(paymentType, partyType)) {
+            syncSupplierPayables();
+            double total = repo.findByPaymentTypeAndPartyType(PAYMENT_TYPE, SUPPLIER_PARTY).stream()
+                .filter(payment -> !trim(payment.getPurchaseOrderNo()).isEmpty())
+                .map(this::toPayableMap)
+                .filter(row -> matchesPayable(row, q))
+                .filter(row -> matchesSettlement(row, "unpaidAmount", settlementStatus))
+                .mapToDouble(row -> rowNumber(row, "unpaidAmount"))
+                .sum();
+            summary.put("unpaidAmount", round2(total));
+            return Result.ok(summary);
+        }
+        summary.put("amount", 0.0);
+        return Result.ok(summary);
     }
 
     @GetMapping("/{id}")
@@ -122,11 +156,12 @@ public class PaymentController {
         return Result.ok(null, "删除成功");
     }
 
-    private Result<List<Map<String, Object>>> listCustomerReceivables(String q, int page, int perPage) {
+    private Result<List<Map<String, Object>>> listCustomerReceivables(String q, String settlementStatus, int page, int perPage) {
         syncCustomerReceivables();
         List<Map<String, Object>> rows = repo.findByPaymentTypeAndPartyType(RECEIPT_TYPE, CUSTOMER_PARTY).stream()
             .map(this::toReceivableMap)
             .filter(row -> matchesReceivable(row, q))
+            .filter(row -> matchesSettlement(row, "unreceivedAmount", settlementStatus))
             .sorted(this::compareReceivableRows)
             .toList();
 
@@ -136,12 +171,13 @@ public class PaymentController {
         return Result.okWithTotal(rows.subList(from, to), rows.size());
     }
 
-    private Result<List<Map<String, Object>>> listSupplierPayables(String q, int page, int perPage) {
+    private Result<List<Map<String, Object>>> listSupplierPayables(String q, String settlementStatus, int page, int perPage) {
         syncSupplierPayables();
         List<Map<String, Object>> rows = repo.findByPaymentTypeAndPartyType(PAYMENT_TYPE, SUPPLIER_PARTY).stream()
             .filter(payment -> !trim(payment.getPurchaseOrderNo()).isEmpty())
             .map(this::toPayableMap)
             .filter(row -> matchesPayable(row, q))
+            .filter(row -> matchesSettlement(row, "unpaidAmount", settlementStatus))
             .sorted(this::comparePayableRows)
             .toList();
 
@@ -289,6 +325,13 @@ public class PaymentController {
             .anyMatch(value -> value.contains(keyword));
     }
 
+    private boolean matchesSettlement(Map<String, Object> row, String amountKey, String settlementStatus) {
+        double remaining = rowNumber(row, amountKey);
+        if ("unsettled".equals(settlementStatus)) return remaining > 0;
+        if ("settled".equals(settlementStatus)) return remaining <= 0;
+        return true;
+    }
+
     private int compareReceivableRows(Map<String, Object> a, Map<String, Object> b) {
         String dateA = Objects.toString(a.get("deliveryDate"), "");
         String dateB = Objects.toString(b.get("deliveryDate"), "");
@@ -429,6 +472,17 @@ public class PaymentController {
 
     private double numberValue(Number value) {
         return value != null ? value.doubleValue() : 0.0;
+    }
+
+    private double rowNumber(Map<String, Object> row, String key) {
+        Object value = row.get(key);
+        if (value instanceof Number number) return number.doubleValue();
+        if (value == null || String.valueOf(value).isBlank()) return 0.0;
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            return 0.0;
+        }
     }
 
     private double round2(double value) {

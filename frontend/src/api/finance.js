@@ -2,6 +2,7 @@ import request from './request'
 
 export const paymentsAPI = {
   list(params) { return request.get('/payments', { params }) },
+  summary(params) { return request.get('/payments/summary', { params }) },
   create(data) { return request.post('/payments', data) },
   update(id, data) { return request.put(`/payments/${id}`, data) },
   delete(id) { return request.delete(`/payments/${id}`) },

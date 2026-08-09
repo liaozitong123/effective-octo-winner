@@ -1,15 +1,37 @@
 <template>
-  <DataTable
-    ref="tableRef"
-    :columns="columns"
-    :fetchData="fetchData"
-    :search-placeholder="searchPlaceholder"
-    :hide-add="isAutoPayment"
-    :hide-delete="isAutoPayment"
-    @add="openAdd"
-    @edit="openEdit"
-    @delete="handleDelete"
-  />
+  <div class="payment-page">
+    <div v-if="isAutoPayment" class="payment-summary">
+      <span class="summary-label">{{ summaryLabel }}</span>
+      <strong class="summary-amount">{{ formattedSummaryAmount }}</strong>
+      <span class="summary-unit">元</span>
+    </div>
+    <DataTable
+      ref="tableRef"
+      :key="paymentTableKey"
+      :columns="columns"
+      :fetchData="fetchData"
+      :search-placeholder="searchPlaceholder"
+      :hide-add="isAutoPayment"
+      :hide-delete="isAutoPayment"
+      @add="openAdd"
+      @edit="openEdit"
+      @delete="handleDelete"
+      @search-change="handleSearchChange"
+    >
+      <template #toolbar-actions>
+        <el-select
+          v-if="isAutoPayment"
+          v-model="settlementStatus"
+          class="settlement-filter"
+          @change="handleSettlementChange"
+        >
+          <el-option label="全部" value="all" />
+          <el-option :label="isReceivable ? '未收款' : '未付款'" value="unsettled" />
+          <el-option :label="isReceivable ? '已收清' : '已付清'" value="settled" />
+        </el-select>
+      </template>
+    </DataTable>
+  </div>
   <FormDialog
     v-model="dialogVisible"
     :fields="fields"
@@ -21,7 +43,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import DataTable from '../../components/DataTable.vue'
@@ -33,6 +55,9 @@ const tableRef = ref(null)
 const dialogVisible = ref(false)
 const editId = ref(null)
 const editData = ref({})
+const summaryAmount = ref(0)
+const summarySearch = ref('')
+const settlementStatus = ref('all')
 
 const fixedPaymentType = computed(() => String(route.meta.paymentType || ''))
 const fixedPartyType = computed(() => String(route.meta.partyType || ''))
@@ -41,6 +66,12 @@ const isPayable = computed(() => fixedPaymentType.value === '付款' && fixedPar
 const isAutoPayment = computed(() => isReceivable.value || isPayable.value)
 const pageTitle = computed(() => route.meta.pageTitle || '付款/收款单')
 const searchPlaceholder = computed(() => `搜索${pageTitle.value}...`)
+const paymentTableKey = computed(() => `${fixedPaymentType.value}-${fixedPartyType.value}`)
+const summaryLabel = computed(() => isReceivable.value ? '当前未收款' : '当前未付款')
+const formattedSummaryAmount = computed(() => toMoney(summaryAmount.value).toLocaleString('zh-CN', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}))
 const columns = computed(() => {
   if (isReceivable.value) return receivableColumns
   if (isPayable.value) return payableColumns
@@ -124,7 +155,33 @@ function fetchData(params) {
     ...params,
     paymentType: fixedPaymentType.value,
     partyType: fixedPartyType.value,
+    settlementStatus: settlementStatus.value,
   })
+}
+
+async function loadSummary() {
+  if (!isAutoPayment.value) {
+    summaryAmount.value = 0
+    return
+  }
+  const res = await paymentsAPI.summary({
+    q: summarySearch.value,
+    paymentType: fixedPaymentType.value,
+    partyType: fixedPartyType.value,
+    settlementStatus: settlementStatus.value,
+  })
+  const data = res.data?.data || {}
+  summaryAmount.value = isReceivable.value ? toNumber(data.unreceivedAmount) : toNumber(data.unpaidAmount)
+}
+
+function handleSearchChange(value) {
+  summarySearch.value = String(value || '').trim()
+  loadSummary()
+}
+
+function handleSettlementChange() {
+  tableRef.value?.loadData()
+  loadSummary()
 }
 
 function openAdd() {
@@ -153,6 +210,7 @@ async function handleDelete(row) {
   await ElMessageBox.confirm('确定删除吗？', '提示', { type: 'warning' })
   await paymentsAPI.delete(row.id)
   tableRef.value.loadData()
+  loadSummary()
 }
 
 async function handleSubmit(form) {
@@ -171,6 +229,7 @@ async function handleSubmit(form) {
     await paymentsAPI.create(payload)
   }
   tableRef.value.loadData()
+  loadSummary()
 }
 
 function handleFormChange(form) {
@@ -201,6 +260,53 @@ watch(() => route.path, () => {
   dialogVisible.value = false
   editId.value = null
   editData.value = {}
+  summarySearch.value = ''
+  settlementStatus.value = 'all'
+  loadSummary()
   tableRef.value?.loadData()
 })
+
+onMounted(loadSummary)
 </script>
+
+<style scoped>
+.payment-page {
+  display: grid;
+  gap: 12px;
+}
+
+.payment-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 54px;
+  padding: 12px 16px;
+  border: 1px solid #fecaca;
+  border-left: 6px solid #dc2626;
+  border-radius: var(--erp-radius);
+  background: #fff7f7;
+}
+
+.summary-label {
+  color: #7f1d1d;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.summary-amount {
+  color: #dc2626;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.summary-unit {
+  color: #7f1d1d;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.settlement-filter {
+  width: 132px;
+}
+</style>
