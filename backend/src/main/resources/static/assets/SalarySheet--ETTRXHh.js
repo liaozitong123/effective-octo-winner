@@ -1,0 +1,1 @@
+import{_ as a,o,c as n,a as s,b as c,r}from"./index-BPgUwYQl.js";const _={},l={class:"salary-sheet-page"},p={class:"salary-sheet-panel"};function d(i,e){const t=r("el-empty");return o(),n("section",l,[s("div",p,[e[0]||(e[0]=s("h2",null,"工资表",-1)),c(t,{description:"工资表功能待配置"})])])}const m=a(_,[["render",d],["__scopeId","data-v-2e20aff9"]]);export{m as default};

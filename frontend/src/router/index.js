@@ -31,6 +31,7 @@ const routes = [
       { path: 'finance/supplier-reconciliation/print', name: 'SupplierReconciliationPrint', component: () => import('../views/finance/SupplierReconciliationPrint.vue'), meta: { pageTitle: '供应商对账单打印' } },
       { path: 'finance/receivables', name: 'Receivables', component: () => import('../views/finance/PaymentList.vue'), meta: { pageTitle: '应收款', paymentType: '收款', partyType: 'customer' } },
       { path: 'finance/payables', name: 'Payables', component: () => import('../views/finance/PaymentList.vue'), meta: { pageTitle: '应付款', paymentType: '付款', partyType: 'supplier' } },
+      { path: 'finance/salary', name: 'SalarySheet', component: () => import('../views/finance/SalarySheet.vue') },
       { path: 'finance/profit', name: 'ProfitAnalysis', component: () => import('../views/finance/ProfitAnalysis.vue') },
       { path: 'finance/reconciliation', redirect: '/finance/customer-reconciliation' },
       { path: 'finance/payments', redirect: '/finance/receivables' },

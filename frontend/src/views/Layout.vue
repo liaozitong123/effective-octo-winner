@@ -46,6 +46,7 @@
             <el-menu-item index="/finance/supplier-reconciliation">供应商对账单</el-menu-item>
             <el-menu-item index="/finance/receivables">应收款</el-menu-item>
             <el-menu-item index="/finance/payables">应付款</el-menu-item>
+            <el-menu-item index="/finance/salary">工资表</el-menu-item>
             <el-menu-item index="/finance/profit">利润分析</el-menu-item>
           </el-sub-menu>
         </el-menu>
@@ -90,7 +91,7 @@ const pageTitle = computed(() => {
     '/purchase/suppliers': '供应商资料', '/purchase/orders': '采购单', '/purchase/receipt': '收货/退货',
     '/warehouse/inventory': '库存汇总', '/warehouse/delivery': '送货/送货单',
     '/finance/customer-reconciliation': '客户对账单', '/finance/supplier-reconciliation': '供应商对账单',
-    '/finance/receivables': '应收款', '/finance/payables': '应付款', '/finance/profit': '利润分析',
+    '/finance/receivables': '应收款', '/finance/payables': '应付款', '/finance/salary': '工资表', '/finance/profit': '利润分析',
   }
   return m[route.path] || ''
 })
