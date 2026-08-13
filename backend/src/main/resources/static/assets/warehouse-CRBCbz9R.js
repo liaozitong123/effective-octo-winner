@@ -1,0 +1,1 @@
+import{k as t}from"./index-Ch89FROE.js";const o={list(e){return t.get("/inventory",{params:e})},create(e){return t.post("/inventory",e)},update(e,r){return t.put(`/inventory/${e}`,r)},delete(e){return t.delete(`/inventory/${e}`)}};export{o as i};

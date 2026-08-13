@@ -22,6 +22,13 @@ export const salaryRecordsAPI = {
   delete(id) { return request.delete(`/salary-records/${id}`) },
 }
 
+export const dailyExpensesAPI = {
+  list(params) { return request.get('/daily-expenses', { params }) },
+  create(data) { return request.post('/daily-expenses', data) },
+  update(id, data) { return request.put(`/daily-expenses/${id}`, data) },
+  delete(id) { return request.delete(`/daily-expenses/${id}`) },
+}
+
 export const financeAPI = {
   profitAnalysis(params) { return request.get('/finance/profit-analysis', { params }) },
   payableReceivable() { return request.get('/finance/payable-receivable') },
