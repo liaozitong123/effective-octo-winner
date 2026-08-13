@@ -1,27 +1,41 @@
 <template>
-  <DataTable
-    ref="tableRef"
-    :columns="columns"
-    :fetchData="fetchData"
-    search-placeholder="搜索销售单号/客户/产品名称/规格..."
-    table-max-height="calc(100vh - 232px)"
-    hideAdd
-    hideActions
-  >
-    <template #deliveryStatus="{ row }">
-      <span :class="['delivery-status', row.deliveryStatus === '已送货' ? 'is-delivered' : 'is-undelivered']">
-        {{ row.deliveryStatus }}
-      </span>
-    </template>
-  </DataTable>
+  <div class="inventory-page">
+    <div class="print-filter-bar">
+      <el-input
+        v-model="printCustomer"
+        clearable
+        class="customer-filter"
+        placeholder="输入客户筛选打印"
+      />
+      <el-button type="primary" @click="openPrintPreview">预览打印未送货库存</el-button>
+    </div>
+    <DataTable
+      ref="tableRef"
+      :columns="columns"
+      :fetchData="fetchData"
+      search-placeholder="搜索销售单号/客户/产品名称/规格..."
+      table-max-height="calc(100vh - 286px)"
+      hideAdd
+      hideActions
+    >
+      <template #deliveryStatus="{ row }">
+        <span :class="['delivery-status', row.deliveryStatus === '已送货' ? 'is-delivered' : 'is-undelivered']">
+          {{ row.deliveryStatus }}
+        </span>
+      </template>
+    </DataTable>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import DataTable from '../../components/DataTable.vue'
 import { inventoryAPI } from '../../api/warehouse'
 
+const router = useRouter()
 const tableRef = ref(null)
+const printCustomer = ref('')
 
 const columns = [
   { key: 'deliveryStatus', label: '送货状态', slot: 'deliveryStatus', width: 92, minWidth: 92 },
@@ -45,9 +59,39 @@ const columns = [
 function fetchData(p) {
   return inventoryAPI.list(p)
 }
+
+function openPrintPreview() {
+  router.push({
+    path: '/warehouse/inventory/print',
+    query: {
+      deliveryStatus: 'undelivered',
+      customer: printCustomer.value.trim(),
+    },
+  })
+}
 </script>
 
 <style scoped>
+.inventory-page {
+  display: grid;
+  gap: 12px;
+}
+
+.print-filter-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius);
+  background: var(--erp-panel);
+}
+
+.customer-filter {
+  width: min(260px, 100%);
+}
+
 .delivery-status {
   font-weight: 800;
 }
@@ -58,5 +102,17 @@ function fetchData(p) {
 
 .delivery-status.is-undelivered {
   color: #dc2626;
+}
+
+@media (max-width: 720px) {
+  .print-filter-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .customer-filter,
+  .print-filter-bar :deep(.el-button) {
+    width: 100%;
+  }
 }
 </style>

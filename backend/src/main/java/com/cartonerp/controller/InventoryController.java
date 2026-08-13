@@ -26,6 +26,8 @@ public class InventoryController {
 
     @GetMapping
     public Result<List<Map<String, Object>>> list(@RequestParam(defaultValue = "") String q,
+                                                   @RequestParam(defaultValue = "") String customer,
+                                                   @RequestParam(defaultValue = "") String deliveryStatus,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int perPage) {
         deliveryNoteService.syncPendingDeliveryNotes();
@@ -33,6 +35,13 @@ public class InventoryController {
         if (q != null && !q.isBlank()) {
             String keyword = q.trim().toLowerCase();
             rows = rows.stream().filter(row -> matches(row, keyword)).toList();
+        }
+        if (customer != null && !customer.isBlank()) {
+            String keyword = customer.trim().toLowerCase();
+            rows = rows.stream().filter(row -> contains(row.get("customerName"), keyword)).toList();
+        }
+        if (deliveryStatus != null && !deliveryStatus.isBlank() && !"all".equalsIgnoreCase(deliveryStatus)) {
+            rows = rows.stream().filter(row -> matchesDeliveryStatus(row.get("deliveryStatus"), deliveryStatus)).toList();
         }
         int safePerPage = Math.max(perPage, 1);
         int from = Math.min(Math.max(page - 1, 0) * safePerPage, rows.size());
@@ -96,6 +105,18 @@ public class InventoryController {
             .filter(Objects::nonNull)
             .map(value -> String.valueOf(value).toLowerCase())
             .anyMatch(value -> value.contains(keyword));
+    }
+
+    private boolean contains(Object value, String keyword) {
+        return value != null && String.valueOf(value).toLowerCase().contains(keyword);
+    }
+
+    private boolean matchesDeliveryStatus(Object value, String status) {
+        String actual = value != null ? String.valueOf(value) : "";
+        String normalized = status.trim().toLowerCase();
+        if ("undelivered".equals(normalized)) return "未送货".equals(actual);
+        if ("delivered".equals(normalized)) return "已送货".equals(actual);
+        return actual.equals(status.trim());
     }
 
     private String sourceCustomerName(ProductionOrder productionOrder, PurchaseOrder purchaseOrder, SalesOrder salesOrder) {

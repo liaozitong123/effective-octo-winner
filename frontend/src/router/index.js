@@ -21,6 +21,7 @@ const routes = [
       { path: 'purchase/orders', name: 'PurchaseOrders', component: () => import('../views/purchase/PurchaseOrderList.vue') },
       { path: 'purchase/receipt', name: 'GoodsReceipt', component: () => import('../views/warehouse/GoodsReceipt.vue') },
       { path: 'warehouse/inventory', name: 'Inventory', component: () => import('../views/warehouse/InventoryList.vue') },
+      { path: 'warehouse/inventory/print', name: 'InventoryPrint', component: () => import('../views/warehouse/InventoryPrint.vue') },
       { path: 'warehouse/receipt', redirect: '/purchase/receipt' },
       { path: 'warehouse/delivery', name: 'DeliveryNotes', component: () => import('../views/warehouse/DeliveryNoteList.vue') },
       { path: 'warehouse/delivery/print', name: 'DeliveryNotePrint', component: () => import('../views/warehouse/DeliveryNotePrint.vue') },
