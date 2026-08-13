@@ -28,17 +28,15 @@
             <template #title><el-icon><ShoppingCart /></el-icon><span>采购管理</span></template>
             <el-menu-item index="/purchase/suppliers">供应商资料</el-menu-item>
             <el-menu-item index="/purchase/orders">采购单</el-menu-item>
+            <el-menu-item index="/purchase/receipt">收货/退货</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="production">
             <template #title><el-icon><Setting /></el-icon><span>生产管理</span></template>
             <el-menu-item index="/production/orders">生产单</el-menu-item>
             <el-menu-item index="/production/records">产量登记</el-menu-item>
-            <el-menu-item index="/production/progress">生产进度</el-menu-item>
-            <el-menu-item index="/production/qrcode">加工区二维码</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="warehouse">
             <template #title><el-icon><Box /></el-icon><span>仓库管理</span></template>
-            <el-menu-item index="/warehouse/receipt">收货/退货</el-menu-item>
             <el-menu-item index="/warehouse/inventory">库存汇总</el-menu-item>
             <el-menu-item index="/warehouse/delivery">送货/送货单</el-menu-item>
           </el-sub-menu>
@@ -89,8 +87,8 @@ const pageTitle = computed(() => {
   const m = {
     '/dashboard': '仪表盘', '/sales/customers': '客户资料', '/sales/orders': '销售订单',
     '/production/orders': '生产单', '/production/records': '产量登记',
-    '/production/progress': '生产进度', '/production/qrcode': '加工区二维码', '/purchase/suppliers': '供应商资料', '/purchase/orders': '采购单',
-    '/warehouse/receipt': '收货/退货', '/warehouse/inventory': '库存汇总', '/warehouse/delivery': '送货/送货单',
+    '/purchase/suppliers': '供应商资料', '/purchase/orders': '采购单', '/purchase/receipt': '收货/退货',
+    '/warehouse/inventory': '库存汇总', '/warehouse/delivery': '送货/送货单',
     '/finance/customer-reconciliation': '客户对账单', '/finance/supplier-reconciliation': '供应商对账单',
     '/finance/receivables': '应收款', '/finance/payables': '应付款', '/finance/profit': '利润分析',
   }
